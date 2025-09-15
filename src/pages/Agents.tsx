@@ -71,108 +71,110 @@ const Agents = () => {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Агенты</h1>
-          <p className="text-muted-foreground">
-            Управляйте своими AI-агентами и выбирайте из маркетплейса
-          </p>
-        </div>
-        <CreateAgentDialog />
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Всего агентов</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockAgents.length}</div>
-            <p className="text-xs text-muted-foreground">+2 за последнюю неделю</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Мои агенты</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-muted-foreground">Создано вами</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Активных</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">4</div>
-            <p className="text-xs text-muted-foreground">Используются в задачах</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Поиск и фильтры</CardTitle>
-          <CardDescription>
-            Найдите нужного агента или создайте собственного
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Поиск агентов..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Тип агента" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все типы</SelectItem>
-                <SelectItem value="analyst">Аналитик</SelectItem>
-                <SelectItem value="creative">Творческий</SelectItem>
-                <SelectItem value="technical">Технический</SelectItem>
-                <SelectItem value="judge">Судья</SelectItem>
-                <SelectItem value="researcher">Исследователь</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Agents Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredAgents.map((agent) => (
-          <AgentCard
-            key={agent.id}
-            {...agent}
-          />
-        ))}
-      </div>
-
-      {filteredAgents.length === 0 && (
-        <Card className="text-center py-8">
-          <CardContent>
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Агенты</h1>
             <p className="text-muted-foreground">
-              Агенты не найдены. Попробуйте изменить критерии поиска.
+              Управляйте своими AI-агентами и выбирайте из маркетплейса
             </p>
+          </div>
+          <CreateAgentDialog />
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Всего агентов</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockAgents.length}</div>
+              <p className="text-xs text-muted-foreground">+2 за последнюю неделю</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Мои агенты</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1</div>
+              <p className="text-xs text-muted-foreground">Создано вами</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Активных</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">4</div>
+              <p className="text-xs text-muted-foreground">Используются в задачах</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Поиск и фильтры</CardTitle>
+            <CardDescription>
+              Найдите нужного агента или создайте собственного
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Поиск агентов..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Тип агента" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все типы</SelectItem>
+                  <SelectItem value="analyst">Аналитик</SelectItem>
+                  <SelectItem value="creative">Творческий</SelectItem>
+                  <SelectItem value="technical">Технический</SelectItem>
+                  <SelectItem value="judge">Судья</SelectItem>
+                  <SelectItem value="researcher">Исследователь</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
-      )}
-    </div>
+
+        {/* Agents Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredAgents.map((agent) => (
+            <AgentCard
+              key={agent.id}
+              {...agent}
+            />
+          ))}
+        </div>
+
+        {filteredAgents.length === 0 && (
+          <Card className="text-center py-8">
+            <CardContent>
+              <p className="text-muted-foreground">
+                Агенты не найдены. Попробуйте изменить критерии поиска.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </Layout>
   );
 };
 
