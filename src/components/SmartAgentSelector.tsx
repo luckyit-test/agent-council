@@ -169,8 +169,8 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
         </Button>
       </PopoverTrigger>
       
-      <PopoverContent className="w-[min(500px,90vw)] p-0" align="start">
-        <div className="flex flex-col max-h-[500px]">
+      <PopoverContent className="w-[min(450px,90vw)] p-0" align="start">
+        <div className="flex flex-col h-[min(500px,80vh)]">
           {/* Search Header */}
           <div className="p-4 border-b space-y-3">
             <div className="relative">
