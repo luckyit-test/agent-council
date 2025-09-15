@@ -281,12 +281,6 @@ const Playground = () => {
                   </div>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={clearChat}>
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
 
             {/* Messages */}
