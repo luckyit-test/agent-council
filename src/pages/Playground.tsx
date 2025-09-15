@@ -136,17 +136,22 @@ const Playground = () => {
     setIsTyping(true);
 
     try {
+      // Determine which AI provider to use
+      const aiProvider = selectedAgent.aiProvider || 'openai';
+      const aiModel = selectedAgent.aiModel || 'gpt-4';
+      
       // Simulate typing delay
       await new Promise(resolve => setTimeout(resolve, 800));
       setIsTyping(false);
       
-      // Simulate AI response
+      // Here will be real API call to the selected AI provider
+      // For now, show a message indicating which AI would be used
       await new Promise(resolve => setTimeout(resolve, 1200));
 
       const assistantMessage: Message = {
         id: `msg_${Date.now()}_assistant`,
         role: 'assistant',
-        content: generateMockResponse(inputMessage, selectedAgent),
+        content: `Получен запрос: "${inputMessage.trim()}"\n\nДля ответа будет использоваться ${aiProvider} (${aiModel}).\n\nИнтеграция с реальными API провайдеров будет добавлена в следующих версиях.`,
         timestamp: new Date(),
         agentId: selectedAgent.id
       };
@@ -173,30 +178,6 @@ const Playground = () => {
     }
   };
 
-  const generateMockResponse = (userInput: string, agent: UserAgent): string => {
-    const responses = {
-      analyst: [
-        "Интересный вопрос! Давайте проанализируем данные. На основе предоставленной информации я вижу несколько ключевых трендов...",
-        "Анализируя этот вопрос, важно рассмотреть различные метрики и KPI. Рекомендую обратить внимание на...",
-        "Хороший аналитический запрос. Для получения точных выводов необходимо учесть следующие факторы..."
-      ],
-      creative: [
-        "Отличная идея для творческого развития! Предлагаю несколько креативных подходов к решению этой задачи...",
-        "Ваш запрос вдохновляет на создание чего-то уникального. Вот несколько креативных концепций...",
-        "Интересный творческий вызов! Давайте подумаем нестандартно и создадим что-то особенное..."
-      ],
-      technical: [
-        "С технической точки зрения этот вопрос требует системного подхода. Рассмотрим архитектуру решения...",
-        "Хороший технический вопрос! Для реализации потребуется учесть следующие аспекты...",
-        "Анализируя техническую сторону, рекомендую использовать современные подходы и лучшие практики..."
-      ]
-    };
-
-    const agentResponses = responses[agent.type as keyof typeof responses] || responses.analyst;
-    const randomResponse = agentResponses[Math.floor(Math.random() * agentResponses.length)];
-    
-    return `${randomResponse}\n\n*[Это демо-ответ. В реальном приложении здесь будет ответ от ${agent.aiProvider} ${agent.aiModel}]*`;
-  };
 
   const clearChat = () => {
     if (currentSession) {
