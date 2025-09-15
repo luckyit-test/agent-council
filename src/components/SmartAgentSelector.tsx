@@ -145,7 +145,7 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-[350px] justify-between text-left font-normal"
+          className="w-full justify-between text-left font-normal"
         >
           {selectedAgent ? (
             <div className="flex items-center gap-2 min-w-0">
@@ -169,7 +169,7 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
         </Button>
       </PopoverTrigger>
       
-      <PopoverContent className="w-[380px] p-0" align="start">
+      <PopoverContent className="w-[min(500px,90vw)] p-0" align="start">
         <div className="flex flex-col max-h-[500px]">
           {/* Search Header */}
           <div className="p-4 border-b space-y-3">
