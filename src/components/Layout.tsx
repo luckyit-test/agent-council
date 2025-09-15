@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Settings, Brain } from "lucide-react";
 import { CreateTaskDialog } from "./CreateTaskDialog";
+import { CreateAgentDialog } from "./CreateAgentDialog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </div>
             
             <div className="flex items-center gap-2">
+              <CreateAgentDialog />
               <Button variant="outline" size="sm">
                 <Settings className="w-4 h-4 mr-2" />
                 Настройки
