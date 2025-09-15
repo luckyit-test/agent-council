@@ -81,32 +81,32 @@ export const AgentCard = ({
             </div>
             
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg mb-3">{name}</CardTitle>
-              
-              <div className="flex items-center gap-2 mb-3">
-                <Badge variant="outline" className="text-xs">
-                  {getAgentTypeName(type)}
-                </Badge>
-                <Badge 
-                  variant={isCustom ? "default" : "secondary"} 
-                  className={`text-xs flex items-center gap-1 ${
-                    isCustom 
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" 
-                      : "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                  }`}
-                >
-                  {isCustom ? (
-                    <>
-                      <User className="w-3 h-3" />
-                      Мой
-                    </>
-                  ) : (
-                    <>
-                      <Store className="w-3 h-3" />
-                      Маркетплейс
-                    </>
-                  )}
-                </Badge>
+              <div className="flex items-center gap-3 mb-3 flex-wrap">
+                <CardTitle className="text-lg">{name}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {getAgentTypeName(type)}
+                  </Badge>
+                  <Badge 
+                    className={`text-xs flex items-center gap-1 border-0 ${
+                      isCustom 
+                        ? "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/40" 
+                        : "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40"
+                    }`}
+                  >
+                    {isCustom ? (
+                      <>
+                        <User className="w-3 h-3" />
+                        Мой
+                      </>
+                    ) : (
+                      <>
+                        <Store className="w-3 h-3" />
+                        Маркетплейс
+                      </>
+                    )}
+                  </Badge>
+                </div>
               </div>
               
               <CardDescription className="text-sm leading-relaxed">
