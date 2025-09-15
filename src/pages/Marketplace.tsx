@@ -482,7 +482,9 @@ export default function Marketplace() {
   };
 
   // Группировка по категориям
-  const groupByCategory = (items: any[]) => {
+  const groupByCategory = (items: any[]): Record<string, any[]> => {
+    if (items.length === 0) return {};
+    
     return items.reduce((groups, item) => {
       const category = item.category || 'Другое';
       if (!groups[category]) {
@@ -596,14 +598,16 @@ export default function Marketplace() {
 
           <TabsContent value="agents" className="mt-6">
             <div className="space-y-8">
-              {filteredAgents.length > 0 ? Object.entries(groupByCategory(filteredAgents)).map(([category, items]) => (
-                <CategorySection 
-                  key={category} 
-                  categoryName={category} 
-                  items={items} 
-                  type="agent" 
-                />
-              )) : (
+              {filteredAgents.length > 0 ? (
+                Object.entries(groupByCategory(filteredAgents)).map(([category, items]) => (
+                  <CategorySection 
+                    key={category} 
+                    categoryName={category} 
+                    items={items} 
+                    type="agent" 
+                  />
+                ))
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">Агенты не найдены</p>
                 </div>
@@ -613,14 +617,16 @@ export default function Marketplace() {
 
           <TabsContent value="bots" className="mt-6">
             <div className="space-y-8">
-              {filteredBots.length > 0 ? Object.entries(groupByCategory(filteredBots)).map(([category, items]) => (
-                <CategorySection 
-                  key={category} 
-                  categoryName={category} 
-                  items={items} 
-                  type="bot" 
-                />
-              )) : (
+              {filteredBots.length > 0 ? (
+                Object.entries(groupByCategory(filteredBots)).map(([category, items]) => (
+                  <CategorySection 
+                    key={category} 
+                    categoryName={category} 
+                    items={items} 
+                    type="bot" 
+                  />
+                ))
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">Боты не найдены</p>
                 </div>
@@ -630,14 +636,16 @@ export default function Marketplace() {
 
           <TabsContent value="tasks" className="mt-6">
             <div className="space-y-8">
-              {filteredTasks.length > 0 ? Object.entries(groupByCategory(filteredTasks)).map(([category, items]) => (
-                <CategorySection 
-                  key={category} 
-                  categoryName={category} 
-                  items={items} 
-                  type="task" 
-                />
-              )) : (
+              {filteredTasks.length > 0 ? (
+                Object.entries(groupByCategory(filteredTasks)).map(([category, items]) => (
+                  <CategorySection 
+                    key={category} 
+                    categoryName={category} 
+                    items={items} 
+                    type="task" 
+                  />
+                ))
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">Задачи не найдены</p>
                 </div>
