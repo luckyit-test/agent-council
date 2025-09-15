@@ -679,50 +679,36 @@ const Playground = () => {
                   </CardContent>
                 </Card>
 
-                {/* Enhanced Input Area */}
-                <Card className="mt-4">
-                  <CardContent className="p-4">
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <Textarea
-                          placeholder="Напишите сообщение..."
-                          value={inputMessage}
-                          onChange={(e) => setInputMessage(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              sendMessage();
-                            }
-                          }}
-                          className="min-h-[80px] resize-none"
-                          disabled={isGenerating}
-                        />
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>Enter для отправки</span>
-                            <span>•</span>
-                            <span>Shift+Enter для новой строки</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {inputMessage.length}/2000
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={sendMessage}
-                        disabled={!inputMessage.trim() || isGenerating}
-                        className="self-end"
-                        size="icon"
-                      >
-                        {isGenerating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Simple Input Area */}
+                <div className="mt-4 flex gap-3 items-end">
+                  <div className="flex-1">
+                    <Textarea
+                      placeholder="Напишите сообщение..."
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      className="min-h-[60px] resize-none"
+                      disabled={isGenerating}
+                    />
+                  </div>
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!inputMessage.trim() || isGenerating}
+                    size="icon"
+                    className="h-[60px] w-12"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
               </>
             ) : (
               /* Empty State */
