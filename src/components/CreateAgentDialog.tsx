@@ -68,19 +68,23 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   // Загружаем список настроенных провайдеров
   useEffect(() => {
     const savedKeys = localStorage.getItem('ai-api-keys');
+    let configured = [];
+    
     if (savedKeys) {
       try {
         const keys = JSON.parse(savedKeys);
-        const configured = Object.keys(keys).filter(key => keys[key]);
-        // Добавляем perplexity как всегда доступный
-        setConfiguredProviders([...configured, 'perplexity']);
+        configured = Object.keys(keys).filter(key => keys[key]);
       } catch (error) {
         console.error('Error loading API keys:', error);
-        setConfiguredProviders(['perplexity']);
       }
-    } else {
-      setConfiguredProviders(['perplexity']);
     }
+    
+    // Добавляем провайдеров, которые настроены в Supabase secrets
+    // OpenAI и Perplexity всегда доступны через Supabase
+    const supabaseProviders = ['openai', 'perplexity'];
+    const allConfigured = [...new Set([...configured, ...supabaseProviders])];
+    
+    setConfiguredProviders(allConfigured);
   }, [open]);
 
   const handleCreateAgent = () => {
