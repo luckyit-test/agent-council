@@ -18,10 +18,13 @@ import {
   Copy,
   Loader2,
   Circle,
+  Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
 import { SmartAgentSelector } from "@/components/SmartAgentSelector";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -242,7 +245,7 @@ const Playground = () => {
         
         {/* Compact Header with Smart Agent Selector */}
         <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-lg border">
-          <div className="flex items-center gap-4 w-full">
+          <div className="flex items-center gap-4 flex-1">
             <MessageSquare className="w-5 h-5 text-primary shrink-0" />
             <h1 className="text-lg font-semibold shrink-0">Playground</h1>
             
@@ -255,6 +258,114 @@ const Playground = () => {
               />
             </div>
           </div>
+          
+          {/* Right Actions */}
+          {selectedAgent && (
+            <div className="flex items-center gap-2">
+              {/* Chat History */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Clock className="w-4 h-4" />
+                    История
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="p-3">
+                    <h4 className="font-medium mb-3">История чатов с {selectedAgent.name}</h4>
+                    <ScrollArea className="h-60">
+                      {chatSessions.filter(s => s.agentId === selectedAgent.id).length > 0 ? (
+                        <div className="space-y-2">
+                          {chatSessions
+                            .filter(s => s.agentId === selectedAgent.id)
+                            .map(session => (
+                              <div
+                                key={session.id}
+                                className={cn(
+                                  "p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors",
+                                  currentSession?.id === session.id && "bg-muted border-primary"
+                                )}
+                                onClick={() => setCurrentSession(session)}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-sm font-medium">
+                                    {session.messages.length} сообщений
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatTime(session.createdAt)}
+                                  </span>
+                                </div>
+                                {session.messages.length > 0 && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {session.messages[0].content}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-sm text-muted-foreground">
+                          Нет истории чатов
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Quick Actions */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Действия
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2" align="end">
+                  <div className="space-y-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => startNewChat(selectedAgent)}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Новый чат
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start gap-2"
+                      onClick={clearChat}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Очистить чат
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => {
+                        if (currentSession?.messages.length) {
+                          const chatContent = currentSession.messages
+                            .map(m => `${m.role === 'user' ? 'Пользователь' : selectedAgent.name}: ${m.content}`)
+                            .join('\n\n');
+                          navigator.clipboard.writeText(chatContent);
+                          toast({
+                            title: "Экспорт чата",
+                            description: "Переписка скопирована в буфер обмена"
+                          });
+                        }
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                      Экспорт чата
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
         </div>
 
         {/* Chat Interface */}
