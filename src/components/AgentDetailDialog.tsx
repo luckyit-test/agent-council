@@ -107,17 +107,42 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
   const [isEditing, setIsEditing] = useState(false);
   const [editedAgent, setEditedAgent] = useState<Agent | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
 
   useEffect(() => {
     if (agent) {
       setEditedAgent({ ...agent });
-      setIsEditing(false);
+      // Автоматически включить режим редактирования для своих агентов
+      setIsEditing(agent.isCustom || false);
+      setErrors({});
     }
   }, [agent]);
 
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!editedAgent?.name?.trim()) {
+      newErrors.name = 'Название обязательно';
+    }
+    if (!editedAgent?.type) {
+      newErrors.type = 'Выберите тип агента';
+    }
+    if (!editedAgent?.description?.trim()) {
+      newErrors.description = 'Описание обязательно';
+    }
+    if (!editedAgent?.prompt?.trim()) {
+      newErrors.prompt = 'Промпт обязателен';
+    } else if (editedAgent.prompt.length < 10) {
+      newErrors.prompt = 'Промпт должен содержать минимум 10 символов';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
-    if (!editedAgent || !agent) return;
+    if (!editedAgent || !agent || !validateForm()) return;
     
     const success = updateUserAgent(agent.id, {
       name: editedAgent.name,
@@ -173,62 +198,76 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center gap-4 mb-2">
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getAgentColor(agent.type)}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getAgentColor(agent.type)}`}>
               {getAgentIcon(agent.type)}
             </div>
             <div>
-              <DialogTitle className="text-2xl">{agent.name}</DialogTitle>
-              <Badge variant="outline" className="mt-1">
+              <DialogTitle className="text-xl">
+                {agent?.isCustom ? 'Редактирование агента' : 'Детали агента'}
+              </DialogTitle>
+              <Badge variant="outline" className="mt-1 text-xs">
                 {getAgentTypeName(agent.type)}
               </Badge>
             </div>
           </div>
-          <DialogDescription className="text-base">
-            {agent.description}
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-4">
           {/* Agent Information Form */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="agent-name">Название агента</Label>
+              <Label htmlFor="agent-name" className="text-sm font-medium">
+                Название агента <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="agent-name"
                 value={editedAgent?.name || ""}
-                onChange={(e) => setEditedAgent(prev => prev ? { ...prev, name: e.target.value } : null)}
+                onChange={(e) => {
+                  setEditedAgent(prev => prev ? { ...prev, name: e.target.value } : null);
+                  if (errors.name) setErrors(prev => ({...prev, name: ''}));
+                }}
                 readOnly={!isEditing || !agent?.isCustom}
-                className={`mt-1 ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''}`}
+                className={`mt-1 ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''} ${errors.name ? 'border-red-500' : ''}`}
+                placeholder="Например: Эксперт по маркетингу"
               />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
             
             <div>
-              <Label htmlFor="agent-type">Тип агента</Label>
+              <Label htmlFor="agent-type" className="text-sm font-medium">
+                Тип агента <span className="text-red-500">*</span>
+              </Label>
               {isEditing && agent?.isCustom ? (
-                <Select
-                  value={editedAgent?.type || ""}
-                  onValueChange={(value) => setEditedAgent(prev => prev ? { ...prev, type: value } : null)}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agentTypes.map((type) => {
-                      const Icon = type.icon;
-                      return (
-                        <SelectItem key={type.value} value={type.value}>
-                          <div className="flex items-center gap-2">
-                            <Icon className="w-4 h-4" />
-                            <span>{type.label}</span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select
+                    value={editedAgent?.type || ""}
+                    onValueChange={(value) => {
+                      setEditedAgent(prev => prev ? { ...prev, type: value } : null);
+                      if (errors.type) setErrors(prev => ({...prev, type: ''}));
+                    }}
+                  >
+                    <SelectTrigger className={`mt-1 ${errors.type ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder="Выберите тип агента" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      {agentTypes.map((type) => {
+                        const Icon = type.icon;
+                        return (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-4 h-4" />
+                              <span>{type.label}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
+                </>
               ) : (
                 <Input
                   id="agent-type"
@@ -240,29 +279,51 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
             </div>
             
             <div>
-              <Label htmlFor="agent-description">Описание</Label>
+              <Label htmlFor="agent-description" className="text-sm font-medium">
+                Описание <span className="text-red-500">*</span>
+              </Label>
               <Textarea
                 id="agent-description"
                 value={editedAgent?.description || ""}
-                onChange={(e) => setEditedAgent(prev => prev ? { ...prev, description: e.target.value } : null)}
+                onChange={(e) => {
+                  setEditedAgent(prev => prev ? { ...prev, description: e.target.value } : null);
+                  if (errors.description) setErrors(prev => ({...prev, description: ''}));
+                }}
                 readOnly={!isEditing || !agent?.isCustom}
-                className={`mt-1 min-h-20 ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''}`}
+                className={`mt-1 min-h-20 ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''} ${errors.description ? 'border-red-500' : ''}`}
+                placeholder="Опишите, что умеет ваш агент и для каких задач он предназначен..."
               />
+              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
             
-            {editedAgent?.prompt && (
+            {editedAgent?.prompt !== undefined && (
               <div>
-                <Label htmlFor="agent-prompt">Системный промпт</Label>
+                <Label htmlFor="agent-prompt" className="text-sm font-medium">
+                  Системный промпт <span className="text-red-500">*</span>
+                </Label>
                 <Textarea
                   id="agent-prompt"
                   value={editedAgent.prompt}
-                  onChange={(e) => setEditedAgent(prev => prev ? { ...prev, prompt: e.target.value } : null)}
+                  onChange={(e) => {
+                    setEditedAgent(prev => prev ? { ...prev, prompt: e.target.value } : null);
+                    if (errors.prompt) setErrors(prev => ({...prev, prompt: ''}));
+                  }}
                   readOnly={!isEditing || !agent?.isCustom}
-                  className={`mt-1 min-h-32 font-mono text-sm ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''}`}
+                  className={`mt-1 min-h-32 font-mono text-sm ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''} ${errors.prompt ? 'border-red-500' : ''}`}
+                  placeholder="Введите системный промпт, который определяет поведение вашего агента..."
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Промпт определяет как агент будет вести себя и отвечать на запросы
-                </p>
+                <div className="flex justify-between items-center mt-1">
+                  {errors.prompt ? (
+                    <p className="text-red-500 text-xs">{errors.prompt}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Промпт определяет как агент будет вести себя и отвечать на запросы
+                    </p>
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {editedAgent.prompt?.length || 0} символов
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -324,28 +385,31 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
           <Separator />
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex justify-end gap-2 pt-4 border-t">
             {agent?.isCustom ? (
               <>
                 {isEditing ? (
                   <>
-                    <Button onClick={handleSave} className="flex-1">
-                      <Save className="w-4 h-4 mr-2" />
-                      Сохранить
-                    </Button>
                     <Button variant="outline" onClick={handleCancel}>
                       Отмена
                     </Button>
+                    <Button 
+                      onClick={handleSave}
+                      disabled={!editedAgent?.name || !editedAgent?.description || !editedAgent?.prompt}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Сохранить изменения
+                    </Button>
                   </>
                 ) : (
-                  <Button onClick={() => setIsEditing(true)} className="flex-1">
+                  <Button onClick={() => setIsEditing(true)}>
                     <Settings className="w-4 h-4 mr-2" />
                     Редактировать
                   </Button>
                 )}
               </>
             ) : (
-              <Button className="flex-1">
+              <Button>
                 <Play className="w-4 h-4 mr-2" />
                 Использовать агента
               </Button>
