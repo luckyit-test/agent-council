@@ -66,26 +66,38 @@ const Playground = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Start collapsed
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Auto-collapse sidebar on mobile and when starting a chat
-  useEffect(() => {
-    if (isMobile) {
-      setSidebarCollapsed(true);
+  // Handle hover expand/collapse
+  const handleMouseEnter = () => {
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
     }
-  }, [isMobile]);
+    setSidebarCollapsed(false);
+  };
 
-  // Auto-collapse when starting a new chat on mobile
-  useEffect(() => {
-    if (currentSession && isMobile) {
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
       setSidebarCollapsed(true);
-    }
-  }, [currentSession, isMobile]);
+    }, 300); // Small delay before collapsing
+    setHoverTimeout(timeout);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+    };
+  }, [hoverTimeout]);
 
   // Load user agents
   useEffect(() => {
@@ -325,7 +337,11 @@ const Playground = () => {
         <div className="flex h-full gap-4">
           
           {/* Collapsible Sidebar */}
-          <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300 space-y-4 flex flex-col ${sidebarCollapsed ? 'border-r' : ''}`}>
+          <div 
+            className={`${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300 space-y-4 flex flex-col ${sidebarCollapsed ? 'border-r' : ''}`}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             {/* Header with Collapse Button */}
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
@@ -339,14 +355,7 @@ const Playground = () => {
                   </p>
                 </div>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="shrink-0"
-              >
-                {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-              </Button>
+              {/* Remove manual toggle button since we're using hover */}
             </div>
 
             {/* Agent Selection */}
