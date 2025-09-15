@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, Plus, Heart, Download, Eye, Brain, UserPlus, Check, Filter, Star, TrendingUp, Clock } from "lucide-react";
+import { Search, Plus, Heart, Download, Brain, UserPlus, Check, Filter, Star, TrendingUp, Clock } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -1059,7 +1059,7 @@ export default function Marketplace() {
   };
 
   const MarketplaceCard = ({ item, type }: { item: any; type: string }) => (
-    <Card className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-muted-foreground/20">
+    <Card className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-muted-foreground/20" onClick={() => handleViewDetails(item)}>
       <CardHeader className="pb-3 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -1090,12 +1090,12 @@ export default function Marketplace() {
                 {/* Mock статистики */}
                 <div className="flex items-center gap-1">
                   <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                  <span>4.8</span>
+                  <span>{item.rating}</span>
                 </div>
                 
                 <div className="flex items-center gap-1">
                   <Download className="w-3 h-3" />
-                  <span>1.2k</span>
+                  <span>{item.downloads > 1000 ? `${(item.downloads / 1000).toFixed(1)}k` : item.downloads}</span>
                 </div>
               </div>
               
@@ -1115,16 +1115,16 @@ export default function Marketplace() {
           </div>
           
           <div className="flex flex-col gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => handleViewDetails(item)}>
-              <Eye className="w-4 h-4" />
-            </Button>
             {addedToMyAgents.has(item.id) ? (
               <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 px-2 py-1">
                 <Check className="w-4 h-4" />
                 Добавлено в мои агенты
               </div>
             ) : (
-              <Button size="sm" onClick={() => handleTryExample(item)}>
+              <Button size="sm" onClick={(e) => {
+                e.stopPropagation();
+                handleTryExample(item);
+              }}>
                 <UserPlus className="w-4 h-4 mr-1" />
                 + Мои агенты
               </Button>
