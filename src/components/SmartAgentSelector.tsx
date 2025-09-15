@@ -60,10 +60,10 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'analyst': return 'text-blue-600 bg-blue-50';
-      case 'creative': return 'text-purple-600 bg-purple-50';
-      case 'technical': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'analyst': return 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/50';
+      case 'creative': return 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-950/50';
+      case 'technical': return 'text-primary bg-primary/10';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
@@ -243,9 +243,9 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
                             <div
                               className={cn(
                                 "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
-                                "hover:bg-muted",
-                                selectedAgent?.id === agent.id && "bg-muted",
-                                expandedAgent === agent.id && "bg-muted"
+                                "hover:bg-accent/50",
+                                selectedAgent?.id === agent.id && "bg-accent",
+                                expandedAgent === agent.id && "bg-accent"
                               )}
                               onClick={() => handleAgentSelect(agent)}
                             >
