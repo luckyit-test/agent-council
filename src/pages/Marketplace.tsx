@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Plus, Heart, Download, Eye } from "lucide-react";
+import { Search, Plus, Heart, Download, Eye, Brain } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -496,52 +496,61 @@ export default function Marketplace() {
   };
 
   const MarketplaceCard = ({ item, type }: { item: any; type: string }) => (
-    <Card className="hover:shadow-lg transition-all duration-200 hover-scale">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <CardTitle className="text-lg">{item.name}</CardTitle>
-              <Badge className={typeColors[item.type as keyof typeof typeColors]}>
-                {item.type}
-              </Badge>
+    <Card className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-muted-foreground/20">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center border ${typeColors[item.type as keyof typeof typeColors]}`}>
+              <Brain className="w-5 h-5" />
             </div>
-            <CardDescription className="text-sm mb-2">{item.description}</CardDescription>
-            {item.capabilities && (
-              <p className="text-xs text-muted-foreground mb-2">
-                <strong>Что умеет:</strong> {item.capabilities}
-              </p>
-            )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Avatar className="w-5 h-5">
-                <AvatarFallback className="text-xs">{item.author[0]}</AvatarFallback>
-              </Avatar>
-              <span>by {item.author}</span>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-3 flex-wrap">
+                <CardTitle className="text-lg">{item.name}</CardTitle>
+                <Badge className={typeColors[item.type as keyof typeof typeColors]}>
+                  {item.type}
+                </Badge>
+              </div>
+              
+              <CardDescription className="text-sm leading-relaxed mb-3">
+                {item.description}
+              </CardDescription>
+              
+              {item.capabilities && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  <strong>Что умеет:</strong> {item.capabilities}
+                </p>
+              )}
+              
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                <Avatar className="w-5 h-5">
+                  <AvatarFallback className="text-xs">{item.author[0]}</AvatarFallback>
+                </Avatar>
+                <span>by {item.author}</span>
+              </div>
+              
+              <div className="flex flex-wrap gap-1 mb-3">
+                {item.tags?.map((tag: string) => (
+                  <Badge key={tag} variant="outline" className="text-xs">
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
+          </div>
+          
+          <div className="flex flex-col gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={() => handleViewDetails(item)}>
+              <Eye className="w-4 h-4 mr-1" />
+              Подробнее
+            </Button>
+            <Button size="sm" onClick={() => handleTryExample(item)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Попробовать
+            </Button>
           </div>
         </div>
       </CardHeader>
-      
-      <CardContent className="pt-0">
-        <div className="flex flex-wrap gap-1 mb-3">
-          {item.tags?.map((tag: string) => (
-            <Badge key={tag} variant="outline" className="text-xs">
-              #{tag}
-            </Badge>
-          ))}
-        </div>
-        
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleViewDetails(item)}>
-            <Eye className="w-4 h-4 mr-1" />
-            Подробнее
-          </Button>
-          <Button size="sm" onClick={() => handleTryExample(item)}>
-            <Plus className="w-4 h-4 mr-1" />
-            Попробовать
-          </Button>
-        </div>
-      </CardContent>
     </Card>
   );
 
@@ -550,7 +559,7 @@ export default function Marketplace() {
       <h3 className="text-lg font-semibold text-foreground">
         {categoryName} ({items.length})
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="space-y-4">
         {items.map((item) => (
           <MarketplaceCard key={item.id} item={item} type={type} />
         ))}
