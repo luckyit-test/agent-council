@@ -200,24 +200,24 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getAgentColor(agent.type)}`}>
               {getAgentIcon(agent.type)}
             </div>
-            <div>
-              <DialogTitle className="text-xl">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg sm:text-xl truncate">
                 {agent?.isCustom ? 'Редактирование агента' : 'Детали агента'}
               </DialogTitle>
-              <Badge variant="outline" className="mt-1 text-xs">
+              <Badge variant="outline" className="text-xs">
                 {getAgentTypeName(agent.type)}
               </Badge>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2">
           {/* Agent Information Form */}
           <div className="space-y-4">
             <div>
@@ -311,7 +311,7 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                     if (errors.prompt) setErrors(prev => ({...prev, prompt: ''}));
                   }}
                   readOnly={!isEditing || !agent?.isCustom}
-                  className={`mt-1 min-h-32 font-mono text-sm ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''} ${errors.prompt ? 'border-red-500' : ''}`}
+                  className={`mt-1 min-h-24 sm:min-h-32 font-mono text-sm ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''} ${errors.prompt ? 'border-red-500' : ''}`}
                   placeholder="Введите системный промпт, который определяет поведение вашего агента..."
                 />
                 <div className="flex justify-between items-center mt-1">
@@ -384,34 +384,38 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
             </>
           )}
 
-          <Separator />
-
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            {agent?.isCustom && (
-              <>
-                {isEditing ? (
-                  <>
-                    <Button variant="outline" onClick={handleCancel}>
-                      Отмена
-                    </Button>
-                    <Button 
-                      onClick={handleSave}
-                      disabled={!editedAgent?.name || !editedAgent?.description || !editedAgent?.prompt}
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Сохранить изменения
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => setIsEditing(true)}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Редактировать
+          {agent?.isCustom && (
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 mt-6 border-t">
+              {isEditing ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancel}
+                    className="w-full sm:w-auto"
+                  >
+                    Отмена
                   </Button>
-                )}
-              </>
-            )}
-          </div>
+                  <Button 
+                    onClick={handleSave}
+                    disabled={!editedAgent?.name || !editedAgent?.description || !editedAgent?.prompt}
+                    className="w-full sm:w-auto"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Сохранить изменения
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  onClick={() => setIsEditing(true)}
+                  className="w-full sm:w-auto"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Редактировать
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Delete Confirmation Dialog - moved to parent component */}
