@@ -304,7 +304,7 @@ const Playground = () => {
         <div className="flex h-full gap-4">
           
           {/* Collapsible Sidebar */}
-          <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300 space-y-4 flex flex-col`}>
+          <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300 space-y-4 flex flex-col ${sidebarCollapsed ? 'border-r' : ''}`}>
             {/* Header with Collapse Button */}
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
