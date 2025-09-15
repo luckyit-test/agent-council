@@ -388,7 +388,7 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-4 border-t">
-            {agent?.isCustom ? (
+            {agent?.isCustom && (
               <>
                 {isEditing ? (
                   <>
@@ -410,11 +410,6 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                   </Button>
                 )}
               </>
-            ) : (
-              <Button>
-                <Play className="w-4 h-4 mr-2" />
-                Использовать агента
-              </Button>
             )}
           </div>
         </div>
