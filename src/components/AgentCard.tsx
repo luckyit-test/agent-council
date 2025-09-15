@@ -121,18 +121,20 @@ export const AgentCard = ({
           </div>
           
           {isCustom ? (
+            // Для своих агентов - крестик удаления
             <Button
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit?.(id);
+                onDelete?.(id);
               }}
-            variant="ghost"
-            size="icon"
-            className="shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground"
-          >
-              <Edit className="w-4 h-4" />
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-8 w-8 text-muted-foreground hover:text-red-500"
+            >
+              <X className="w-4 h-4" />
             </Button>
           ) : (
+            // Для агентов из маркетплейса - крестик удаления
             <Button
               onClick={(e) => {
                 e.stopPropagation();

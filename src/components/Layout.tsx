@@ -4,7 +4,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Settings, Brain } from "lucide-react";
 import { CreateTaskDialog } from "./CreateTaskDialog";
-import { CreateAgentDialog } from "./CreateAgentDialog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,7 +29,6 @@ export const Layout = ({ children }: LayoutProps) => {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <CreateAgentDialog />
                   <CreateTaskDialog />
                 </div>
               </div>
