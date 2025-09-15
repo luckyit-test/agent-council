@@ -25,7 +25,7 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [providerFilter, setProviderFilter] = useState<string>("");
-  const [hoveredAgent, setHoveredAgent] = useState<UserAgent | null>(null);
+  const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [recentAgents, setRecentAgents] = useState<string[]>([]);
   const [favoriteAgents, setFavoriteAgents] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -42,6 +42,10 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
   useEffect(() => {
     if (open && searchInputRef.current) {
       setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+    if (!open) {
+      setExpandedAgent(null);
+      setSearchQuery("");
     }
   }, [open]);
 
@@ -80,7 +84,11 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
     
     onSelectAgent(agent);
     setOpen(false);
-    setSearchQuery("");
+  };
+
+  const toggleExpanded = (agentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedAgent(expandedAgent === agentId ? null : agentId);
   };
 
   // Filter and group agents
@@ -161,87 +169,85 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
         </Button>
       </PopoverTrigger>
       
-      <PopoverContent className="w-[500px] p-0" align="start">
-        <div className="flex h-[400px]">
-          {/* Main Panel */}
-          <div className="flex-1 flex flex-col">
-            {/* Search Header */}
-            <div className="p-4 border-b space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  ref={searchInputRef}
-                  placeholder="Поиск агентов..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              {/* Provider Filters */}
-              {providers.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
+      <PopoverContent className="w-[380px] p-0" align="start">
+        <div className="flex flex-col max-h-[500px]">
+          {/* Search Header */}
+          <div className="p-4 border-b space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                placeholder="Поиск агентов..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {/* Provider Filters */}
+            {providers.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={providerFilter === "" ? "default" : "outline"}
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => setProviderFilter("")}
+                >
+                  Все
+                </Button>
+                {providers.map(provider => (
                   <Button
-                    variant={providerFilter === "" ? "default" : "outline"}
+                    key={provider}
+                    variant={providerFilter === provider ? "default" : "outline"}
                     size="sm"
                     className="h-6 text-xs"
-                    onClick={() => setProviderFilter("")}
+                    onClick={() => setProviderFilter(provider === providerFilter ? "" : provider)}
                   >
-                    Все
+                    <div className="flex items-center gap-1">
+                      {getProviderIcon(provider)}
+                      <span className="capitalize">{provider}</span>
+                    </div>
                   </Button>
-                  {providers.map(provider => (
-                    <Button
-                      key={provider}
-                      variant={providerFilter === provider ? "default" : "outline"}
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => setProviderFilter(provider === providerFilter ? "" : provider)}
-                    >
-                      <div className="flex items-center gap-1">
-                        {getProviderIcon(provider)}
-                        <span className="capitalize">{provider}</span>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Agents List */}
-            <ScrollArea className="flex-1">
-              <div className="p-2">
-                {groupedAgents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Bot className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      {searchQuery ? "Агенты не найдены" : "Нет доступных агентов"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {groupedAgents.map(group => (
-                      <div key={group.type}>
-                        <div className="flex items-center gap-2 mb-2">
-                          {group.type === 'recent' && <Clock className="w-4 h-4 text-orange-600" />}
-                          {group.type === 'favorites' && <Star className="w-4 h-4 text-yellow-600" />}
-                          <h4 className={cn("text-sm font-medium", group.color)}>
-                            {group.label}
-                          </h4>
-                          <div className="flex-1 h-px bg-border" />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          {group.agents.map(agent => (
+          {/* Agents List */}
+          <ScrollArea className="flex-1">
+            <div className="p-3">
+              {groupedAgents.length === 0 ? (
+                <div className="text-center py-8">
+                  <Bot className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {searchQuery ? "Агенты не найдены" : "Нет доступных агентов"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {groupedAgents.map(group => (
+                    <div key={group.type}>
+                      <div className="flex items-center gap-2 mb-2">
+                        {group.type === 'recent' && <Clock className="w-4 h-4 text-orange-600" />}
+                        {group.type === 'favorites' && <Star className="w-4 h-4 text-yellow-600" />}
+                        <h4 className={cn("text-sm font-medium", group.color)}>
+                          {group.label}
+                        </h4>
+                        <div className="flex-1 h-px bg-border" />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        {group.agents.map(agent => (
+                          <div key={agent.id} className="space-y-1">
+                            {/* Main Agent Row */}
                             <div
-                              key={agent.id}
                               className={cn(
-                                "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors",
+                                "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
                                 "hover:bg-muted",
-                                selectedAgent?.id === agent.id && "bg-muted"
+                                selectedAgent?.id === agent.id && "bg-muted",
+                                expandedAgent === agent.id && "bg-muted"
                               )}
                               onClick={() => handleAgentSelect(agent)}
-                              onMouseEnter={() => setHoveredAgent(agent)}
-                              onMouseLeave={() => setHoveredAgent(null)}
                             >
                               <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
                                 <Bot className="w-3 h-3" />
@@ -264,61 +270,69 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
                                 </p>
                               </div>
                               
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 shrink-0"
-                                onClick={(e) => toggleFavorite(agent.id, e)}
-                              >
-                                <Star className={cn(
-                                  "w-3 h-3",
-                                  favoriteAgents.includes(agent.id) 
-                                    ? "fill-yellow-400 text-yellow-400" 
-                                    : "text-muted-foreground"
-                                )} />
-                              </Button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={(e) => toggleFavorite(agent.id, e)}
+                                >
+                                  <Star className={cn(
+                                    "w-3 h-3",
+                                    favoriteAgents.includes(agent.id) 
+                                      ? "fill-yellow-400 text-yellow-400" 
+                                      : "text-muted-foreground"
+                                  )} />
+                                </Button>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={(e) => toggleExpanded(agent.id, e)}
+                                >
+                                  <ChevronDown className={cn(
+                                    "w-3 h-3 transition-transform",
+                                    expandedAgent === agent.id && "rotate-180"
+                                  )} />
+                                </Button>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
 
-          {/* Preview Panel */}
-          {hoveredAgent && (
-            <div className="w-[200px] border-l bg-muted/20 p-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-sm">{hoveredAgent.name}</h5>
-                    <div className={cn("text-xs px-2 py-1 rounded", getTypeColor(hoveredAgent.type))}>
-                      {hoveredAgent.type}
+                            {/* Expanded Details */}
+                            {expandedAgent === agent.id && (
+                              <div className="ml-9 p-3 bg-muted/50 rounded-lg border-l-2 border-primary/20">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className={cn("text-xs px-2 py-1 rounded font-medium", getTypeColor(agent.type))}>
+                                      {agent.type}
+                                    </div>
+                                  </div>
+                                  
+                                  <p className="text-sm text-muted-foreground leading-relaxed">
+                                    {agent.description}
+                                  </p>
+                                  
+                                  {agent.aiProvider && (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      {getProviderIcon(agent.aiProvider)}
+                                      <span>{agent.aiProvider}</span>
+                                      <span>•</span>
+                                      <span>{agent.aiModel}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-                
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {hoveredAgent.description}
-                </p>
-                
-                {hoveredAgent.aiProvider && (
-                  <div className="flex items-center gap-2 text-xs">
-                    {getProviderIcon(hoveredAgent.aiProvider)}
-                    <span>{hoveredAgent.aiProvider}</span>
-                    <span className="text-muted-foreground">•</span>
-                    <span>{hoveredAgent.aiModel}</span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-          )}
+          </ScrollArea>
         </div>
       </PopoverContent>
     </Popover>
