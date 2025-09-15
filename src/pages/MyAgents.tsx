@@ -164,6 +164,7 @@ const MyAgents = () => {
           agent={selectedAgent}
           open={detailDialogOpen}
           onOpenChange={setDetailDialogOpen}
+          onAgentUpdated={refreshAgents}
         />
       </div>
     </Layout>

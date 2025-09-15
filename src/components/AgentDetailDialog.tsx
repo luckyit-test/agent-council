@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,6 +6,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -20,11 +30,16 @@ import {
   Settings,
   Copy,
   User,
-  Tag
+  Tag,
+  Save,
+  Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { updateUserAgent, removeUserAgent } from "@/utils/agentStorage";
 
 interface Agent {
   id: string;
@@ -37,13 +52,23 @@ interface Agent {
   category?: string;
   author?: string;
   tags?: string[];
+  isCustom?: boolean;
 }
 
 interface AgentDetailDialogProps {
   agent: Agent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAgentUpdated?: () => void;
 }
+
+const agentTypes = [
+  { value: "analyst", label: "Аналитик", icon: Brain },
+  { value: "creative", label: "Творческий", icon: Lightbulb },
+  { value: "technical", label: "Технический", icon: Code },
+  { value: "judge", label: "Судья", icon: Gavel },
+  { value: "researcher", label: "Исследователь", icon: Search }
+];
 
 const getAgentIcon = (type: string) => {
   switch (type) {
@@ -78,7 +103,72 @@ const getAgentTypeName = (type: string) => {
   }
 };
 
-export const AgentDetailDialog = ({ agent, open, onOpenChange }: AgentDetailDialogProps) => {
+export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }: AgentDetailDialogProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedAgent, setEditedAgent] = useState<Agent | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (agent) {
+      setEditedAgent({ ...agent });
+      setIsEditing(false);
+    }
+  }, [agent]);
+
+  const handleSave = async () => {
+    if (!editedAgent || !agent) return;
+    
+    const success = updateUserAgent(agent.id, {
+      name: editedAgent.name,
+      type: editedAgent.type,
+      description: editedAgent.description,
+      prompt: editedAgent.prompt
+    });
+    
+    if (success) {
+      toast({
+        title: "Агент обновлен",
+        description: "Изменения успешно сохранены"
+      });
+      setIsEditing(false);
+      onAgentUpdated?.();
+    } else {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось сохранить изменения",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!agent) return;
+    
+    const success = removeUserAgent(agent.id);
+    if (success) {
+      toast({
+        title: "Агент удален",
+        description: "Агент удален из ваших агентов"
+      });
+      onOpenChange(false);
+      onAgentUpdated?.();
+    } else {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить агента",
+        variant: "destructive"
+      });
+    }
+    setShowDeleteDialog(false);
+  };
+
+  const handleCancel = () => {
+    if (agent) {
+      setEditedAgent({ ...agent });
+    }
+    setIsEditing(false);
+  };
   if (!agent) return null;
 
   return (
@@ -102,46 +192,73 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange }: AgentDetailDial
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Agent Information Form Style */}
+          {/* Agent Information Form */}
           <div className="space-y-4">
             <div>
               <Label htmlFor="agent-name">Название агента</Label>
               <Input
                 id="agent-name"
-                value={agent.name}
-                readOnly
-                className="mt-1 bg-muted/30"
+                value={editedAgent?.name || ""}
+                onChange={(e) => setEditedAgent(prev => prev ? { ...prev, name: e.target.value } : null)}
+                readOnly={!isEditing || !agent?.isCustom}
+                className={`mt-1 ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''}`}
               />
             </div>
             
             <div>
               <Label htmlFor="agent-type">Тип агента</Label>
-              <Input
-                id="agent-type"
-                value={getAgentTypeName(agent.type)}
-                readOnly
-                className="mt-1 bg-muted/30"
-              />
+              {isEditing && agent?.isCustom ? (
+                <Select
+                  value={editedAgent?.type || ""}
+                  onValueChange={(value) => setEditedAgent(prev => prev ? { ...prev, type: value } : null)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agentTypes.map((type) => {
+                      const Icon = type.icon;
+                      return (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4" />
+                            <span>{type.label}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="agent-type"
+                  value={getAgentTypeName(editedAgent?.type || "")}
+                  readOnly
+                  className="mt-1 bg-muted/30"
+                />
+              )}
             </div>
             
             <div>
               <Label htmlFor="agent-description">Описание</Label>
               <Textarea
                 id="agent-description"
-                value={agent.description}
-                readOnly
-                className="mt-1 min-h-20 bg-muted/30"
+                value={editedAgent?.description || ""}
+                onChange={(e) => setEditedAgent(prev => prev ? { ...prev, description: e.target.value } : null)}
+                readOnly={!isEditing || !agent?.isCustom}
+                className={`mt-1 min-h-20 ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''}`}
               />
             </div>
             
-            {agent.prompt && (
+            {editedAgent?.prompt && (
               <div>
                 <Label htmlFor="agent-prompt">Системный промпт</Label>
                 <Textarea
                   id="agent-prompt"
-                  value={agent.prompt}
-                  readOnly
-                  className="mt-1 min-h-32 font-mono text-sm bg-muted/30"
+                  value={editedAgent.prompt}
+                  onChange={(e) => setEditedAgent(prev => prev ? { ...prev, prompt: e.target.value } : null)}
+                  readOnly={!isEditing || !agent?.isCustom}
+                  className={`mt-1 min-h-32 font-mono text-sm ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''}`}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Промпт определяет как агент будет вести себя и отвечать на запросы
@@ -151,7 +268,7 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange }: AgentDetailDial
           </div>
 
           {/* Additional Info */}
-          {(agent.author || agent.tags) && (
+          {(agent?.author || agent?.tags) && (
             <>
               <Separator />
               <div className="space-y-3">
@@ -181,7 +298,7 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange }: AgentDetailDial
           )}
 
           {/* Stats (только если есть) */}
-          {(agent.rating || agent.usageCount) && (
+          {(agent?.rating || agent?.usageCount) && (
             <>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
@@ -203,7 +320,62 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange }: AgentDetailDial
               </div>
             </>
           )}
+
+          <Separator />
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            {agent?.isCustom ? (
+              <>
+                {isEditing ? (
+                  <>
+                    <Button onClick={handleSave} className="flex-1">
+                      <Save className="w-4 h-4 mr-2" />
+                      Сохранить
+                    </Button>
+                    <Button variant="outline" onClick={handleCancel}>
+                      Отмена
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button onClick={() => setIsEditing(true)} className="flex-1">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Редактировать
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowDeleteDialog(true)}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Удалить
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
+              <Button className="flex-1">
+                <Play className="w-4 h-4 mr-2" />
+                Использовать агента
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Удалить агента?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Вы действительно хотите удалить агента "{agent?.name}"? Это действие нельзя отменить.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
