@@ -180,9 +180,10 @@ const Playground = () => {
       );
 
     } catch (error) {
+      console.error('Error in sendMessage:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось получить ответ от агента",
+        description: error instanceof Error ? error.message : "Не удалось получить ответ от агента",
         variant: "destructive"
       });
     } finally {
