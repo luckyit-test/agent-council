@@ -548,6 +548,10 @@ const Playground = () => {
                   className="flex-1 min-h-[120px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   rows={4}
                 />
+                {(() => {
+                  console.log('Current state:', { selectedAgent: !!selectedAgent, currentSession: !!currentSession, isGenerating, inputMessage: inputMessage.length });
+                  return null;
+                })()}
                 <Button
                   onClick={sendMessage}
                   disabled={!inputMessage.trim() || isGenerating}
