@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Plus, Heart, Download, Eye, Brain } from "lucide-react";
+import { Search, Plus, Heart, Download, Eye, Brain, UserPlus, Check } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AgentDetailDialog } from "@/components/AgentDetailDialog";
 
 // Mock marketplace data - витрина примеров
 const marketplaceAgents = [
@@ -450,6 +451,9 @@ const typeColors = {
 export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("agents");
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [addedToMyAgents, setAddedToMyAgents] = useState<Set<string>>(new Set());
 
   const filteredAgents = useMemo(() => {
     return marketplaceAgents.filter(agent =>
@@ -474,11 +478,13 @@ export default function Marketplace() {
   }, [searchQuery]);
 
   const handleTryExample = (item: any) => {
-    console.log("Trying example:", item);
+    setAddedToMyAgents(prev => new Set([...prev, item.id]));
+    console.log("Adding to my agents:", item);
   };
 
   const handleViewDetails = (item: any) => {
-    console.log("Viewing details:", item);
+    setSelectedAgent(item);
+    setDetailDialogOpen(true);
   };
 
   // Группировка по категориям
@@ -544,10 +550,17 @@ export default function Marketplace() {
               <Eye className="w-4 h-4 mr-1" />
               Подробнее
             </Button>
-            <Button size="sm" onClick={() => handleTryExample(item)}>
-              <Plus className="w-4 h-4 mr-1" />
-              Попробовать
-            </Button>
+            {addedToMyAgents.has(item.id) ? (
+              <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 px-2 py-1">
+                <Check className="w-4 h-4" />
+                Добавлено в мои агенты
+              </div>
+            ) : (
+              <Button size="sm" onClick={() => handleTryExample(item)}>
+                <UserPlus className="w-4 h-4 mr-1" />
+                + Мои агенты
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -662,6 +675,13 @@ export default function Marketplace() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Agent Detail Dialog */}
+        <AgentDetailDialog
+          agent={selectedAgent}
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+        />
       </div>
     </Layout>
   );
