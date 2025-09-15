@@ -110,7 +110,16 @@ const Playground = () => {
   };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !currentSession || !selectedAgent || isGenerating) return;
+    console.log('sendMessage called', { inputMessage, currentSession, selectedAgent, isGenerating });
+    if (!inputMessage.trim() || !currentSession || !selectedAgent || isGenerating) {
+      console.log('Early return conditions met:', { 
+        inputEmpty: !inputMessage.trim(), 
+        noSession: !currentSession, 
+        noAgent: !selectedAgent, 
+        isGenerating 
+      });
+      return;
+    }
 
     const userMessage: Message = {
       id: `msg_${Date.now()}_user`,
@@ -141,9 +150,13 @@ const Playground = () => {
       const aiProvider = selectedAgent.aiProvider || 'openai';
       const aiModel = selectedAgent.aiModel || (aiProvider === 'openai' ? 'gpt-4o-mini' : aiProvider === 'perplexity' ? 'sonar' : 'claude-3-sonnet');
       
+      console.log('About to call AI with:', { aiProvider, aiModel, agentPrompt: selectedAgent.prompt });
+      
       // Simulate typing delay
       await new Promise(resolve => setTimeout(resolve, 800));
       setIsTyping(false);
+      
+      console.log('Calling supabase function...');
       
       // Call the real AI API through edge function
       const { data, error } = await supabase.functions.invoke('chat-with-ai', {
@@ -156,6 +169,8 @@ const Playground = () => {
           agentPrompt: selectedAgent.prompt
         }
       });
+
+      console.log('Supabase function response:', { data, error });
 
       if (error) {
         throw new Error(error.message || 'Failed to get response from AI');
