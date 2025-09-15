@@ -8,7 +8,9 @@ import {
   Gavel, 
   Search,
   Star,
-  Plus
+  Plus,
+  User,
+  Store
 } from "lucide-react";
 
 interface AgentCardProps {
@@ -19,6 +21,7 @@ interface AgentCardProps {
   prompt?: string;
   rating: number;
   usageCount: number;
+  isCustom: boolean;
   isSelected?: boolean;
   onSelect?: (id: string) => void;
 }
@@ -63,6 +66,7 @@ export const AgentCard = ({
   description,
   rating,
   usageCount,
+  isCustom,
   isSelected = false,
   onSelect
 }: AgentCardProps) => {
@@ -81,8 +85,26 @@ export const AgentCard = ({
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getAgentColor(type)}`}>
               {getAgentIcon(type)}
             </div>
-            <div>
-              <CardTitle className="text-base">{name}</CardTitle>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">{name}</CardTitle>
+                <Badge 
+                  variant={isCustom ? "default" : "secondary"} 
+                  className="text-xs flex items-center gap-1"
+                >
+                  {isCustom ? (
+                    <>
+                      <User className="w-3 h-3" />
+                      Мой
+                    </>
+                  ) : (
+                    <>
+                      <Store className="w-3 h-3" />
+                      Маркетплейс
+                    </>
+                  )}
+                </Badge>
+              </div>
               <Badge variant="outline" className="mt-1 text-xs">
                 {getAgentTypeName(type)}
               </Badge>

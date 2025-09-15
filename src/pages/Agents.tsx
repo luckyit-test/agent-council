@@ -16,7 +16,8 @@ const mockAgents = [
     type: "analyst",
     description: "Глубокий анализ данных, выявление трендов и закономерностей",
     rating: 4.8,
-    usageCount: 1247
+    usageCount: 1247,
+    isCustom: false
   },
   {
     id: "2",
@@ -24,7 +25,8 @@ const mockAgents = [
     type: "creative",
     description: "Генерация креативных идей и нестандартных решений",
     rating: 4.9,
-    usageCount: 892
+    usageCount: 892,
+    isCustom: false
   },
   {
     id: "3",
@@ -32,7 +34,8 @@ const mockAgents = [
     type: "technical",
     description: "Техническая экспертиза и решение сложных технических задач",
     rating: 4.7,
-    usageCount: 654
+    usageCount: 654,
+    isCustom: false
   },
   {
     id: "4",
@@ -40,7 +43,8 @@ const mockAgents = [
     type: "judge",
     description: "Оценка результатов работы агентов и формирование итогового решения",
     rating: 4.9,
-    usageCount: 2156
+    usageCount: 2156,
+    isCustom: false
   },
   {
     id: "5",
@@ -48,7 +52,8 @@ const mockAgents = [
     type: "researcher",
     description: "Поиск и анализ информации из различных источников",
     rating: 4.6,
-    usageCount: 987
+    usageCount: 987,
+    isCustom: false
   },
   {
     id: "6",
@@ -56,7 +61,8 @@ const mockAgents = [
     type: "creative",
     description: "Специализированный агент для маркетинговых задач и стратегий",
     rating: 4.5,
-    usageCount: 123
+    usageCount: 123,
+    isCustom: true
   }
 ];
 
