@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Brain, Bot, Settings, Home, Sparkles, Key, MessageSquare } from "lucide-react";
+import { Brain, Bot, Settings, Home, Sparkles, Key, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { title: "Главная", url: "/", icon: Home },
@@ -15,42 +16,37 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
-  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-
-  // Handle hover expand/collapse
-  const handleMouseEnter = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-    setIsCollapsed(false);
-  };
-
-  const handleMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setIsCollapsed(true);
-    }, 200); // Быстрее сворачивается
-    setHoverTimeout(timeout);
-  };
-
-  // Cleanup timeout on unmount
+  const [isCollapsed, setIsCollapsed] = useState(false); // Начинаем развернутой
+  
+  // Автоматическое сворачивание для Playground
   useEffect(() => {
-    return () => {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout);
-      }
-    };
-  }, [hoverTimeout]);
+    if (currentPath === '/playground') {
+      setIsCollapsed(true);
+    }
+  }, [currentPath]);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   return (
     <aside 
       className={`transition-all duration-300 ease-out ${
         isCollapsed ? "w-16" : "w-64"
-      } bg-card/95 backdrop-blur-sm border-r border-border/30 flex flex-col h-full shadow-sm`} 
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      } bg-card/95 backdrop-blur-sm border-r border-border/30 flex flex-col h-full shadow-sm relative`}
     >
+      {/* Toggle Button */}
+      <div className="absolute -right-3 top-20 z-10">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleSidebar}
+          className="h-6 w-6 rounded-full bg-background border-2 shadow-md hover:shadow-lg transition-all duration-200"
+        >
+          {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="px-3 py-4 border-b border-border/20">
         <div className="flex items-center gap-3">
@@ -95,7 +91,12 @@ export function AppSidebar() {
                 >
                   <item.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary' : ''}`} />
                   {!isCollapsed && (
-                    <span className="font-medium text-sm animate-fade-in">{item.title}</span>
+                    <span className="font-medium text-sm">{item.title}</span>
+                  )}
+                  {isCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                      {item.title}
+                    </div>
                   )}
                   {isActive && !isCollapsed && (
                     <div className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full" />
