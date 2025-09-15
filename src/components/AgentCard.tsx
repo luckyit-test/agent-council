@@ -129,7 +129,7 @@ export const AgentCard = ({
               }}
               variant="ghost"
               size="icon"
-              className="shrink-0 h-8 w-8 text-muted-foreground hover:text-red-500"
+              className="shrink-0 h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -142,7 +142,7 @@ export const AgentCard = ({
               }}
               variant="ghost"
               size="icon"
-              className="shrink-0 h-8 w-8 text-muted-foreground hover:text-red-500"
+              className="shrink-0 h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
             >
               <X className="w-4 h-4" />
             </Button>
