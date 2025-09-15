@@ -84,7 +84,9 @@ export const AgentCard = ({
               <div className="flex items-center gap-3 mb-3 flex-wrap">
                 <CardTitle className="text-lg">{name}</CardTitle>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge 
+                    className={`text-xs border-0 ${getAgentColor(type)}`}
+                  >
                     {getAgentTypeName(type)}
                   </Badge>
                   <Badge 
