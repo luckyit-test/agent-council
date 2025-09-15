@@ -18,16 +18,25 @@ import {
   Star,
   Play,
   Settings,
-  Copy
+  Copy,
+  User,
+  Tag
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface Agent {
   id: string;
   name: string;
   type: string;
   description: string;
-  rating: number;
-  usageCount: number;
+  rating?: number;
+  usageCount?: number;
+  prompt?: string;
+  category?: string;
+  author?: string;
+  tags?: string[];
 }
 
 interface AgentDetailDialogProps {
@@ -93,86 +102,107 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange }: AgentDetailDial
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="text-2xl font-bold">{agent.rating}</span>
+          {/* Agent Information Form Style */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="agent-name">Название агента</Label>
+              <Input
+                id="agent-name"
+                value={agent.name}
+                readOnly
+                className="mt-1 bg-muted/30"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="agent-type">Тип агента</Label>
+              <Input
+                id="agent-type"
+                value={getAgentTypeName(agent.type)}
+                readOnly
+                className="mt-1 bg-muted/30"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="agent-description">Описание</Label>
+              <Textarea
+                id="agent-description"
+                value={agent.description}
+                readOnly
+                className="mt-1 min-h-20 bg-muted/30"
+              />
+            </div>
+            
+            {agent.prompt && (
+              <div>
+                <Label htmlFor="agent-prompt">Системный промпт</Label>
+                <Textarea
+                  id="agent-prompt"
+                  value={agent.prompt}
+                  readOnly
+                  className="mt-1 min-h-32 font-mono text-sm bg-muted/30"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Промпт определяет как агент будет вести себя и отвечать на запросы
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">Рейтинг</p>
-            </div>
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className="text-2xl font-bold mb-1">{agent.usageCount}</div>
-              <p className="text-sm text-muted-foreground">Использований</p>
-            </div>
+            )}
           </div>
 
-          <Separator />
+          {/* Additional Info */}
+          {(agent.author || agent.tags) && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                {agent.author && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Автор:</span>
+                    <span>{agent.author}</span>
+                  </div>
+                )}
+                
+                {agent.tags && agent.tags.length > 0 && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <Tag className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <span className="text-muted-foreground">Теги:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {agent.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
-          {/* Capabilities */}
-          <div>
-            <h3 className="font-semibold mb-3">Возможности агента</h3>
-            <div className="space-y-2 text-sm">
-              {agent.type === "analyst" && (
-                <>
-                  <p>• Глубокий анализ данных и метрик</p>
-                  <p>• Выявление трендов и закономерностей</p>
-                  <p>• Создание аналитических отчетов</p>
-                  <p>• Прогнозирование на основе данных</p>
-                </>
-              )}
-              {agent.type === "creative" && (
-                <>
-                  <p>• Генерация креативных идей</p>
-                  <p>• Создание контента и текстов</p>
-                  <p>• Разработка творческих концепций</p>
-                  <p>• Поиск нестандартных решений</p>
-                </>
-              )}
-              {agent.type === "technical" && (
-                <>
-                  <p>• Решение технических задач</p>
-                  <p>• Анализ кода и архитектуры</p>
-                  <p>• Техническая документация</p>
-                  <p>• Отладка и оптимизация</p>
-                </>
-              )}
-              {agent.type === "judge" && (
-                <>
-                  <p>• Оценка качества работы</p>
-                  <p>• Сравнение альтернативных решений</p>
-                  <p>• Формирование итоговых выводов</p>
-                  <p>• Объективная экспертиза</p>
-                </>
-              )}
-              {agent.type === "researcher" && (
-                <>
-                  <p>• Поиск и анализ информации</p>
-                  <p>• Работа с различными источниками</p>
-                  <p>• Верификация данных</p>
-                  <p>• Создание исследовательских отчетов</p>
-                </>
-              )}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button className="flex-1">
-              <Play className="w-4 h-4 mr-2" />
-              Использовать агента
-            </Button>
-            <Button variant="outline">
-              <Copy className="w-4 h-4 mr-2" />
-              Дублировать
-            </Button>
-            <Button variant="outline" size="icon">
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
+          {/* Stats (только если есть) */}
+          {(agent.rating || agent.usageCount) && (
+            <>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                {agent.rating && (
+                  <div className="text-center p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-2xl font-bold">{agent.rating}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Рейтинг</p>
+                  </div>
+                )}
+                {agent.usageCount && (
+                  <div className="text-center p-4 bg-muted/30 rounded-lg">
+                    <div className="text-2xl font-bold mb-1">{agent.usageCount}</div>
+                    <p className="text-sm text-muted-foreground">Использований</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

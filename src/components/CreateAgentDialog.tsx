@@ -8,6 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Brain, Lightbulb, Code, Gavel, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { createCustomAgent } from "@/utils/agentStorage";
+
+interface CreateAgentDialogProps {
+  onAgentCreated?: () => void;
+}
 
 const agentTypes = [
   { value: "analyst", label: "Аналитик", icon: Brain, description: "Анализ данных и выявление закономерностей" },
@@ -17,7 +22,7 @@ const agentTypes = [
   { value: "researcher", label: "Исследователь", icon: Search, description: "Поиск и анализ информации" }
 ];
 
-export const CreateAgentDialog = () => {
+export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {}) => {
   const [open, setOpen] = useState(false);
   const [agentName, setAgentName] = useState("");
   const [agentType, setAgentType] = useState("");
@@ -35,25 +40,35 @@ export const CreateAgentDialog = () => {
       return;
     }
 
-    // Here would be the logic to create the agent in Supabase
-    console.log("Creating agent:", {
+    const success = createCustomAgent({
       name: agentName,
       type: agentType,
       description: agentDescription,
       prompt: agentPrompt
     });
 
-    toast({
-      title: "Агент создан",
-      description: `Агент "${agentName}" успешно создан и добавлен в ваш маркетплейс`
-    });
+    if (success) {
+      toast({
+        title: "Агент создан",
+        description: `Агент "${agentName}" успешно создан и добавлен в ваш маркетплейс`
+      });
 
-    setOpen(false);
-    // Reset form
-    setAgentName("");
-    setAgentType("");
-    setAgentDescription("");
-    setAgentPrompt("");
+      setOpen(false);
+      // Reset form
+      setAgentName("");
+      setAgentType("");
+      setAgentDescription("");
+      setAgentPrompt("");
+      
+      // Notify parent component
+      onAgentCreated?.();
+    } else {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать агента",
+        variant: "destructive"
+      });
+    }
   };
 
   const selectedType = agentTypes.find(type => type.value === agentType);

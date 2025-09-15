@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { AgentCard } from "@/components/AgentCard";
 import { CreateAgentDialog } from "@/components/CreateAgentDialog";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Users } from "lucide-react";
+import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
 
 const mockAgents = [
   {
@@ -76,20 +77,26 @@ const mockAgents = [
 
 const MyAgents = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState<typeof mockAgents[0] | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<UserAgent | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
+
+  // Load user agents from localStorage
+  useEffect(() => {
+    const agents = getUserAgents();
+    setUserAgents(agents);
+  }, []);
 
   const filteredAgents = useMemo(() => {
-    return mockAgents.filter(agent => {
+    return userAgents.filter(agent => {
       const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            agent.description.toLowerCase().includes(searchQuery.toLowerCase());
-      // Показываем только пользовательские агенты (isCustom: true)
-      return matchesSearch && agent.isCustom;
+      return matchesSearch;
     });
-  }, [searchQuery]);
+  }, [searchQuery, userAgents]);
 
   const handleAgentSelect = (agentId: string) => {
-    const agent = mockAgents.find(a => a.id === agentId);
+    const agent = userAgents.find(a => a.id === agentId);
     if (agent) {
       setSelectedAgent(agent);
       setDetailDialogOpen(true);
@@ -97,11 +104,17 @@ const MyAgents = () => {
   };
 
   const handleAgentEdit = (agentId: string) => {
-    const agent = mockAgents.find(a => a.id === agentId);
+    const agent = userAgents.find(a => a.id === agentId);
     if (agent) {
       setSelectedAgent(agent);
       setDetailDialogOpen(true);
     }
+  };
+
+  // Function to refresh agents list when new agent is created
+  const refreshAgents = () => {
+    const agents = getUserAgents();
+    setUserAgents(agents);
   };
 
   return (
@@ -162,7 +175,7 @@ const MyAgents = () => {
                     Очистить поиск
                   </Button>
                 )}
-                <CreateAgentDialog />
+                <CreateAgentDialog onAgentCreated={refreshAgents} />
               </div>
             </CardContent>
           </Card>
@@ -171,7 +184,7 @@ const MyAgents = () => {
         {/* Create Agent CTA */}
         {filteredAgents.length > 0 && (
           <div className="text-center pt-8">
-            <CreateAgentDialog />
+            <CreateAgentDialog onAgentCreated={refreshAgents} />
           </div>
         )}
 

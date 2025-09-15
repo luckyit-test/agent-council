@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Plus, Heart, Download, Eye, Brain, UserPlus, Check } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AgentDetailDialog } from "@/components/AgentDetailDialog";
+import { addUserAgent, isAgentAdded } from "@/utils/agentStorage";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock marketplace data - витрина примеров
 const marketplaceAgents = [
@@ -21,6 +23,7 @@ const marketplaceAgents = [
     author: "AI Finance Team",
     tags: ["финансы", "отчеты", "прогнозы"],
     capabilities: "Анализирует P&L, баланс, денежные потоки",
+    prompt: "Ты - профессиональный финансовый аналитик с многолетним опытом работы. Твоя задача - анализировать финансовые данные, выявлять тренды, рассчитывать ключевые показатели и предоставлять инсайты для принятия бизнес-решений. Всегда подкрепляй свои выводы конкретными числами и расчетами."
   },
   {
     id: "2",
@@ -73,6 +76,7 @@ const marketplaceAgents = [
     author: "Content Studio", 
     tags: ["копирайтинг", "контент", "продажи"],
     capabilities: "Лендинги, email-рассылки, соцсети",
+    prompt: "Ты - талантливый копирайтер и креативный стратег. Твоя цель - создавать запоминающийся, эмоциональный и эффективный контент. Думай нестандартно, используй креативные приемы, но всегда помни о целевой аудитории и задачах бизнеса. Твои тексты должны цеплять и мотивировать к действию."
   },
   {
     id: "7",
@@ -454,6 +458,18 @@ export default function Marketplace() {
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [addedToMyAgents, setAddedToMyAgents] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+
+  // Load already added agents on component mount
+  useEffect(() => {
+    const addedIds = new Set<string>();
+    marketplaceAgents.forEach(agent => {
+      if (isAgentAdded(agent.id)) {
+        addedIds.add(agent.id);
+      }
+    });
+    setAddedToMyAgents(addedIds);
+  }, []);
 
   const filteredAgents = useMemo(() => {
     return marketplaceAgents.filter(agent =>
@@ -478,8 +494,31 @@ export default function Marketplace() {
   }, [searchQuery]);
 
   const handleTryExample = (item: any) => {
-    setAddedToMyAgents(prev => new Set([...prev, item.id]));
-    console.log("Adding to my agents:", item);
+    const success = addUserAgent({
+      id: item.id,
+      name: item.name,
+      type: item.type,
+      description: item.description,
+      prompt: item.prompt,
+      author: item.author,
+      tags: item.tags,
+      category: item.category
+    });
+    
+    if (success) {
+      setAddedToMyAgents(prev => new Set([...prev, item.id]));
+      toast({
+        title: "Агент добавлен",
+        description: `"${item.name}" добавлен в ваши агенты`
+      });
+      console.log("Adding to my agents:", item);
+    } else {
+      toast({
+        title: "Агент уже добавлен",
+        description: `"${item.name}" уже есть в ваших агентах`,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleViewDetails = (item: any) => {

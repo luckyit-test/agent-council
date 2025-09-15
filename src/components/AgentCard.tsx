@@ -18,8 +18,8 @@ interface AgentCardProps {
   type: string;
   description: string;
   prompt?: string;
-  rating: number;
-  usageCount: number;
+  rating?: number;
+  usageCount?: number;
   isCustom: boolean;
   isSelected?: boolean;
   onSelect?: (id: string) => void;
