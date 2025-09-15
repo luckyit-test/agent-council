@@ -713,16 +713,16 @@ export default function Marketplace() {
 
             {activeTab === "agents" && (
               <Select value={filterByType} onValueChange={setFilterByType}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-36">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Все типы</SelectItem>
                   <SelectItem value="analyst">Аналитик</SelectItem>
-                  <SelectItem value="creative">Творческий</SelectItem>
-                  <SelectItem value="technical">Технический</SelectItem>
-                  <SelectItem value="judge">Судья</SelectItem>
-                  <SelectItem value="researcher">Исследователь</SelectItem>
+                  <SelectItem value="creative">Креатив</SelectItem>
+                  <SelectItem value="business">Бизнес</SelectItem>
+                  <SelectItem value="education">Обучение</SelectItem>
+                  <SelectItem value="specialized">Эксперт</SelectItem>
                 </SelectContent>
               </Select>
             )}
