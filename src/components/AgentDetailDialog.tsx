@@ -386,25 +386,16 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
 
           {/* Actions */}
           {agent?.isCustom && (
-            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 mt-6 border-t">
+            <div className="flex justify-end gap-2 pt-4 mt-6 border-t">
               {isEditing ? (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleCancel}
-                    className="w-full sm:w-auto"
-                  >
-                    Отмена
-                  </Button>
-                  <Button 
-                    onClick={handleSave}
-                    disabled={!editedAgent?.name || !editedAgent?.description || !editedAgent?.prompt}
-                    className="w-full sm:w-auto"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Сохранить изменения
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleSave}
+                  disabled={!editedAgent?.name || !editedAgent?.description || !editedAgent?.prompt}
+                  className="w-full sm:w-auto"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить изменения
+                </Button>
               ) : (
                 <Button 
                   onClick={() => setIsEditing(true)}
