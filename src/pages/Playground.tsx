@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
+import { supabase } from "@/integrations/supabase/client";
 import { SmartAgentSelector } from "@/components/SmartAgentSelector";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -144,14 +145,26 @@ const Playground = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
       setIsTyping(false);
       
-      // Here will be real API call to the selected AI provider
-      // For now, show a message indicating which AI would be used
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Call the real AI API through edge function
+      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+        body: {
+          messages: [
+            { role: 'user', content: inputMessage.trim() }
+          ],
+          provider: aiProvider,
+          model: aiModel,
+          agentPrompt: selectedAgent.prompt
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to get response from AI');
+      }
 
       const assistantMessage: Message = {
         id: `msg_${Date.now()}_assistant`,
         role: 'assistant',
-        content: `Получен запрос: "${inputMessage.trim()}"\n\nДля ответа будет использоваться ${aiProvider} (${aiModel}).\n\nИнтеграция с реальными API провайдеров будет добавлена в следующих версиях.`,
+        content: data.content,
         timestamp: new Date(),
         agentId: selectedAgent.id
       };
