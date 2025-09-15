@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
@@ -28,6 +29,7 @@ const MyAgents = () => {
   const [selectedAgent, setSelectedAgent] = useState<UserAgent | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
+  const [filterType, setFilterType] = useState<"all" | "custom" | "marketplace">("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<UserAgent | null>(null);
   const { toast } = useToast();
@@ -40,26 +42,22 @@ const MyAgents = () => {
 
   const filteredAgents = useMemo(() => {
     return userAgents.filter(agent => {
-      return agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             agent.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           agent.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesFilter = filterType === "all" || 
+                           (filterType === "custom" && agent.isCustom) ||
+                           (filterType === "marketplace" && !agent.isCustom);
+      
+      return matchesSearch && matchesFilter;
     });
-  }, [searchQuery, userAgents]);
+  }, [searchQuery, userAgents, filterType]);
 
-  // Group agents by type
-  const { customAgents, marketplaceAgents } = useMemo(() => {
-    const custom: UserAgent[] = [];
-    const marketplace: UserAgent[] = [];
-    
-    filteredAgents.forEach(agent => {
-      if (agent.isCustom) {
-        custom.push(agent);
-      } else {
-        marketplace.push(agent);
-      }
-    });
-    
-    return { customAgents: custom, marketplaceAgents: marketplace };
-  }, [filteredAgents]);
+  const agentCounts = useMemo(() => {
+    const custom = userAgents.filter(a => a.isCustom).length;
+    const marketplace = userAgents.filter(a => !a.isCustom).length;
+    return { custom, marketplace, total: custom + marketplace };
+  }, [userAgents]);
 
   const handleAgentSelect = (agentId: string) => {
     const agent = userAgents.find(a => a.id === agentId);
@@ -115,110 +113,92 @@ const MyAgents = () => {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">Мои агенты</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Ваши персональные агенты и добавленные из маркетплейса
-          </p>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Compact Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Мои агенты</h1>
+            <p className="text-sm text-muted-foreground">
+              Управляйте своими агентами ({agentCounts.total})
+            </p>
+          </div>
+          <CreateAgentDialog onAgentCreated={refreshAgents} />
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md mx-auto">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-          <Input
-            placeholder="Поиск ваших агентов..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 text-base"
-          />
+        {/* Search and Filter Row */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Поиск агентов..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-background border shadow-lg z-50">
+              <SelectItem value="all">
+                Все агенты ({agentCounts.total})
+              </SelectItem>
+              <SelectItem value="custom">
+                Мои агенты ({agentCounts.custom})
+              </SelectItem>
+              <SelectItem value="marketplace">
+                Из маркетплейса ({agentCounts.marketplace})
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Agents Groups */}
-        {customAgents.length === 0 && marketplaceAgents.length === 0 ? (
+        {/* Agents List */}
+        {filteredAgents.length > 0 ? (
+          <div className="space-y-3">
+            {filteredAgents.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                {...agent}
+                onSelect={handleAgentSelect}
+                onEdit={handleAgentEdit}
+                onDelete={handleAgentDelete}
+              />
+            ))}
+          </div>
+        ) : (
           <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Users className="w-8 h-8 text-muted-foreground" />
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="rounded-full bg-muted p-3 mb-3">
+                <Users className="w-6 h-6 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">
-                {searchQuery ? "Агенты не найдены" : "Нет агентов"}
+              <h3 className="text-lg font-semibold mb-2">
+                {searchQuery || filterType !== "all" ? "Агенты не найдены" : "Нет агентов"}
               </h3>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                {searchQuery 
-                  ? "Попробуйте изменить поисковый запрос"
-                  : "Создайте своего первого агента или выберите из маркетплейса"
+              <p className="text-muted-foreground mb-4 text-sm max-w-md">
+                {searchQuery || filterType !== "all" 
+                  ? "Попробуйте изменить поисковый запрос или фильтр"
+                  : "Создайте своего первого агента или добавьте из маркетплейса"
                 }
               </p>
-              <div className="flex gap-3">
-                {searchQuery && (
+              <div className="flex gap-2">
+                {(searchQuery || filterType !== "all") && (
                   <Button 
                     variant="outline" 
-                    onClick={() => setSearchQuery("")}
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setFilterType("all");
+                    }}
                   >
-                    Очистить поиск
+                    Сбросить фильтры
                   </Button>
                 )}
                 <CreateAgentDialog onAgentCreated={refreshAgents} />
               </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-8">
-            {/* Мои агенты */}
-            {customAgents.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">Мои агенты</h2>
-                  <Badge variant="secondary" className="text-xs">
-                    {customAgents.length}
-                  </Badge>
-                </div>
-                <div className="space-y-4">
-                  {customAgents.map((agent) => (
-                    <AgentCard
-                      key={agent.id}
-                      {...agent}
-                      onSelect={handleAgentSelect}
-                      onEdit={handleAgentEdit}
-                      onDelete={handleAgentDelete}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Агенты из маркетплейса */}
-            {marketplaceAgents.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">Из маркетплейса</h2>
-                  <Badge variant="secondary" className="text-xs">
-                    {marketplaceAgents.length}
-                  </Badge>
-                </div>
-                <div className="space-y-4">
-                  {marketplaceAgents.map((agent) => (
-                    <AgentCard
-                      key={agent.id}
-                      {...agent}
-                      onSelect={handleAgentSelect}
-                      onEdit={handleAgentEdit}
-                      onDelete={handleAgentDelete}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Create Agent CTA */}
-        {(customAgents.length > 0 || marketplaceAgents.length > 0) && (
-          <div className="text-center pt-8">
-            <CreateAgentDialog onAgentCreated={refreshAgents} />
-          </div>
         )}
 
         {/* Agent Detail Dialog */}

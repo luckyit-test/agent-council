@@ -30,12 +30,12 @@ interface AgentCardProps {
 
 const getAgentIcon = (type: string) => {
   switch (type) {
-    case "analyst": return <Brain className="w-5 h-5" />;
-    case "creative": return <Lightbulb className="w-5 h-5" />;
-    case "technical": return <Code className="w-5 h-5" />;
-    case "judge": return <Gavel className="w-5 h-5" />;
-    case "researcher": return <Search className="w-5 h-5" />;
-    default: return <Brain className="w-5 h-5" />;
+    case "analyst": return <Brain className="w-4 h-4" />;
+    case "creative": return <Lightbulb className="w-4 h-4" />;
+    case "technical": return <Code className="w-4 h-4" />;
+    case "judge": return <Gavel className="w-4 h-4" />;
+    case "researcher": return <Search className="w-4 h-4" />;
+    default: return <Brain className="w-4 h-4" />;
   }
 };
 
@@ -76,17 +76,17 @@ export const AgentCard = ({
       className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-muted-foreground/20"
       onClick={() => onSelect?.(id)}
     >
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center border ${getAgentColor(type)}`}>
+      <CardHeader className="pb-3 pt-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${getAgentColor(type)}`}>
               {getAgentIcon(type)}
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <CardTitle className="text-lg">{name}</CardTitle>
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <CardTitle className="text-base">{name}</CardTitle>
+                <div className="flex items-center gap-1.5">
                   <Badge 
                     className={`text-xs border-0 ${getAgentColor(type)}`}
                   >
@@ -114,7 +114,7 @@ export const AgentCard = ({
                 </div>
               </div>
               
-              <CardDescription className="text-sm leading-relaxed">
+              <CardDescription className="text-sm leading-snug line-clamp-2">
                 {description}
               </CardDescription>
             </div>
@@ -126,11 +126,11 @@ export const AgentCard = ({
                 e.stopPropagation();
                 onEdit?.(id);
               }}
-              variant="ghost"
-              size="icon"
-              className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
-            >
-              <Edit className="w-5 h-5" />
+            variant="ghost"
+            size="icon"
+            className="shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground"
+          >
+              <Edit className="w-4 h-4" />
             </Button>
           ) : (
             <Button
@@ -140,9 +140,9 @@ export const AgentCard = ({
               }}
               variant="ghost"
               size="icon"
-              className="shrink-0 h-10 w-10 text-muted-foreground hover:text-red-500"
+              className="shrink-0 h-8 w-8 text-muted-foreground hover:text-red-500"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </Button>
           )}
         </div>
