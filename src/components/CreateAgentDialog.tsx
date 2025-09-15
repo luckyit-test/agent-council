@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Brain, Lightbulb, Code, Gavel, Search, Zap, Shield } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserPlus, Brain, Lightbulb, Code, Gavel, Search, Zap, Shield, Globe, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createCustomAgent } from "@/utils/agentStorage";
 
@@ -74,6 +75,8 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   const [aiProvider, setAiProvider] = useState("");
   const [aiModel, setAiModel] = useState("");
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
+  const [enableWebSearch, setEnableWebSearch] = useState(false);
+  const [enableDeepResearch, setEnableDeepResearch] = useState(false);
   const { toast } = useToast();
 
   // Загружаем список настроенных провайдеров
@@ -123,7 +126,11 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
       description: agentDescription,
       prompt: agentPrompt,
       aiProvider,
-      aiModel
+      aiModel,
+      capabilities: {
+        webSearch: enableWebSearch,
+        deepResearch: enableDeepResearch
+      }
     });
 
     if (success) {
@@ -140,6 +147,8 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
       setAgentPrompt("");
       setAiProvider("");
       setAiModel("");
+      setEnableWebSearch(false);
+      setEnableDeepResearch(false);
       
       // Notify parent component
       onAgentCreated?.();
@@ -288,6 +297,71 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                 </div>
               </div>
             )}
+            
+            {/* Дополнительные возможности */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Дополнительные возможности</Label>
+              
+              <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+                <div className="flex items-start space-x-3">
+                  <Checkbox 
+                    id="web-search"
+                    checked={enableWebSearch}
+                    onCheckedChange={(checked) => setEnableWebSearch(checked === true)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Globe className="w-4 h-4 text-blue-600" />
+                      <Label htmlFor="web-search" className="font-medium cursor-pointer">
+                        Web Search
+                      </Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Агент сможет искать актуальную информацию в интернете в реальном времени
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <Checkbox 
+                    id="deep-research"
+                    checked={enableDeepResearch}
+                    onCheckedChange={(checked) => setEnableDeepResearch(checked === true)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <BookOpen className="w-4 h-4 text-purple-600" />
+                      <Label htmlFor="deep-research" className="font-medium cursor-pointer">
+                        Deep Research
+                      </Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Агент будет проводить глубокое исследование темы с анализом множества источников
+                    </p>
+                  </div>
+                </div>
+                
+                {(enableWebSearch || enableDeepResearch) && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <div className="flex items-start gap-2">
+                      <BookOpen className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">
+                          Требуется настройка API-ключей
+                        </p>
+                        <p className="text-amber-700 dark:text-amber-200">
+                          {enableWebSearch && "Web Search требует настройки Perplexity API. "}
+                          {enableDeepResearch && "Deep Research требует настройки дополнительных API ключей. "}
+                          Убедитесь, что нужные ключи настроены в разделе API-ключи.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             
             <div>
               <Label htmlFor="agent-description">Описание</Label>
