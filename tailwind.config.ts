@@ -47,16 +47,30 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+        // AI Platform Specific Colors
+        agent: {
+          analyst: "hsl(var(--agent-analyst))",
+          creative: "hsl(var(--agent-creative))",
+          technical: "hsl(var(--agent-technical))",
+          judge: "hsl(var(--agent-judge))",
+          researcher: "hsl(var(--agent-researcher))",
         },
+        status: {
+          working: "hsl(var(--status-working))",
+          complete: "hsl(var(--status-complete))",
+          pending: "hsl(var(--status-pending))",
+          error: "hsl(var(--status-error))",
+        },
+      },
+      backgroundImage: {
+        'gradient-ai': 'var(--gradient-ai)',
+        'gradient-success': 'var(--gradient-success)',
+        'gradient-working': 'var(--gradient-working)',
+      },
+      boxShadow: {
+        'ai': 'var(--shadow-ai)',
+        'working': 'var(--shadow-working)',
+        'complete': 'var(--shadow-complete)',
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -84,6 +98,9 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "ai-pulse": "ai-pulse 2s ease-in-out infinite",
+        "working-glow": "working-glow 1.5s ease-in-out infinite",
+        "agent-thinking": "agent-thinking 1s ease-in-out infinite",
       },
     },
   },
