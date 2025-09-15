@@ -245,12 +245,12 @@ const Playground = () => {
         
         {/* Compact Header with Smart Agent Selector */}
         <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-lg border">
-          <div className="flex items-center gap-4 flex-1">
+          <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
             <MessageSquare className="w-5 h-5 text-primary shrink-0" />
             <h1 className="text-lg font-semibold shrink-0">Playground</h1>
             
-            {/* Smart Agent Selector */}
-            <div className="flex-1 max-w-md">
+            {/* Smart Agent Selector - занимает всё доступное место */}
+            <div className="flex-1 min-w-0">
               <SmartAgentSelector
                 agents={userAgents}
                 selectedAgent={selectedAgent}
