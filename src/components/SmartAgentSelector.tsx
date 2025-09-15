@@ -62,7 +62,7 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
     switch (type) {
       case 'analyst': return 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/50';
       case 'creative': return 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-950/50';
-      case 'technical': return 'text-primary bg-primary/10';
+      case 'technical': return 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/50';
       default: return 'text-muted-foreground bg-muted';
     }
   };
@@ -128,7 +128,7 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
       type: 'technical' as const,
       label: 'Технические',
       agents: filteredAgents.filter(a => a.type === 'technical'),
-      color: 'text-primary'
+      color: 'text-blue-600'
     },
     {
       type: 'other' as const,
