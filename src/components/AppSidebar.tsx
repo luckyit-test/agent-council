@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Brain, Bot, Settings, Home, Sparkles, Key, MessageSquare } from "lucide-react";
 import {
@@ -10,7 +11,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  useSidebar,
 } from "@/components/ui/sidebar";
 
 const menuItems = [
@@ -23,16 +23,42 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  const isCollapsed = state === "collapsed";
+  // Handle hover expand/collapse
+  const handleMouseEnter = () => {
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
+    }
+    setIsCollapsed(false);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setIsCollapsed(true);
+    }, 300); // Small delay before collapsing
+    setHoverTimeout(timeout);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+    };
+  }, [hoverTimeout]);
 
   return (
     <Sidebar 
       className={`${isCollapsed ? "w-16" : "w-64"} transition-all duration-300 bg-card/50 backdrop-blur border-r border-border/50`} 
       collapsible="icon"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Header */}
       <SidebarHeader className="px-4 py-6 border-b border-border/50">

@@ -1,22 +1,16 @@
 import { useState, useEffect, useRef } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import {
   Send,
   Bot,
   User,
   Trash2,
-  Play,
-  Square,
   Brain,
   MessageSquare,
   Sparkles,
@@ -24,8 +18,6 @@ import {
   Shield,
   Copy,
   RotateCcw,
-  PanelLeftClose,
-  PanelLeftOpen,
   Edit3,
   MoreHorizontal,
   Download,
@@ -35,8 +27,6 @@ import {
   Loader2,
   Circle,
   Maximize2,
-  Search,
-  Clock,
   Star
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -59,45 +49,16 @@ interface ChatSession {
 }
 
 const Playground = () => {
-  const isMobile = useIsMobile();
   const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<UserAgent | null>(null);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Start collapsed
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-
-  // Handle hover expand/collapse
-  const handleMouseEnter = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-    setSidebarCollapsed(false);
-  };
-
-  const handleMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setSidebarCollapsed(true);
-    }, 300); // Small delay before collapsing
-    setHoverTimeout(timeout);
-  };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout);
-      }
-    };
-  }, [hoverTimeout]);
 
   // Load user agents
   useEffect(() => {
@@ -154,21 +115,8 @@ const Playground = () => {
     });
   };
 
-  const continueChat = (session: ChatSession) => {
-    const agent = userAgents.find(a => a.id === session.agentId);
-    if (agent) {
-      setSelectedAgent(agent);
-      setCurrentSession(session);
-    }
-  };
-
   const sendMessage = async () => {
     if (!inputMessage.trim() || !currentSession || !selectedAgent || isGenerating) return;
-
-    // Auto-collapse sidebar when sending first message on mobile or small screens
-    if ((isMobile || window.innerWidth < 1024) && currentSession.messages.length === 0) {
-      setSidebarCollapsed(true);
-    }
 
     const userMessage: Message = {
       id: `msg_${Date.now()}_user`,
@@ -267,14 +215,6 @@ const Playground = () => {
     }
   };
 
-  const deleteSession = (sessionId: string) => {
-    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-    if (currentSession?.id === sessionId) {
-      setCurrentSession(null);
-      setSelectedAgent(null);
-    }
-  };
-
   const copyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
     toast({
@@ -299,31 +239,6 @@ const Playground = () => {
     });
   };
 
-  const filteredSessions = chatSessions.filter(session =>
-    session.agentName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const exportChat = () => {
-    if (!currentSession) return;
-    
-    const chatText = currentSession.messages
-      .map(msg => `${msg.role === 'user' ? 'Пользователь' : selectedAgent?.name}: ${msg.content}`)
-      .join('\n\n');
-    
-    const blob = new Blob([chatText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat-${selectedAgent?.name}-${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Экспорт завершен",
-      description: "Чат сохранен в файл"
-    });
-  };
-
   const suggestedPrompts = selectedAgent ? [
     `Расскажи о своих возможностях как ${selectedAgent.type} агент`,
     `Какие задачи ты можешь решать лучше всего?`,
@@ -334,454 +249,224 @@ const Playground = () => {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto h-[calc(100vh-120px)]">
-        <div className="flex h-full gap-4">
+        
+        {/* Agent Selection Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2 mb-4">
+            <MessageSquare className="w-6 h-6" />
+            Playground
+          </h1>
           
-          {/* Collapsible Sidebar */}
-          <div 
-            className={`${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300 space-y-4 flex flex-col ${sidebarCollapsed ? 'border-r' : ''}`}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            {/* Header with Collapse Button */}
-            <div className="flex items-center justify-between">
-              {!sidebarCollapsed && (
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <MessageSquare className="w-6 h-6" />
-                    Playground
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Общайтесь с вашими AI агентами
-                  </p>
-                </div>
-              )}
-              {/* Remove manual toggle button since we're using hover */}
-            </div>
-
-            {/* Agent Selection */}
-            {!sidebarCollapsed ? (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Выберите агента</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {userAgents.length > 0 ? (
-                    userAgents.map((agent) => (
-                      <Button
-                        key={agent.id}
-                        variant={selectedAgent?.id === agent.id ? "default" : "ghost"}
-                        className="w-full justify-start p-3 h-auto"
-                        onClick={() => startNewChat(agent)}
-                      >
-                        <div className="flex items-center gap-3 w-full">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <Bot className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 text-left">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{agent.name}</span>
-                              {agent.aiProvider && (
-                                <div className="flex items-center gap-1">
-                                  {getProviderIcon(agent.aiProvider)}
-                                  <Badge variant="secondary" className="text-xs">
-                                    {agent.aiModel}
-                                  </Badge>
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                              {agent.description}
-                            </p>
-                          </div>
+          {/* Agent Selection */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Выберите агента для общения</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {userAgents.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {userAgents.map((agent) => (
+                    <Button
+                      key={agent.id}
+                      variant={selectedAgent?.id === agent.id ? "default" : "outline"}
+                      className="h-auto p-4 justify-start"
+                      onClick={() => startNewChat(agent)}
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Bot className="w-4 h-4" />
                         </div>
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="text-center py-4">
-                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                        <Bot className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm font-medium mb-1">Нет агентов</p>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Создайте своего первого AI агента
-                      </p>
-                      <Button variant="outline" size="sm" onClick={() => window.location.href = '/my-agents'}>
-                        Создать агента
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              // Collapsed sidebar - show only agent icons
-              <div className="space-y-2">
-                {userAgents.map((agent) => (
-                  <Button
-                    key={agent.id}
-                    variant={selectedAgent?.id === agent.id ? "default" : "ghost"}
-                    size="icon"
-                    className="w-12 h-12"
-                    onClick={() => startNewChat(agent)}
-                    title={agent.name}
-                  >
-                    <Bot className="w-5 h-5" />
-                  </Button>
-                ))}
-                {userAgents.length === 0 && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="w-12 h-12"
-                    onClick={() => window.location.href = '/my-agents'}
-                    title="Создать агента"
-                  >
-                    <Bot className="w-5 h-5" />
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Chat History */}
-            {!sidebarCollapsed && (
-              <Card className="flex-1">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">История чатов</CardTitle>
-                    {chatSessions.length > 0 && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Search className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {chatSessions.length > 3 && (
-                    <div className="relative mt-2">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Поиск чатов..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8 h-8"
-                      />
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-48">
-                    {filteredSessions.length > 0 ? (
-                      <div className="space-y-2">
-                        {filteredSessions.map((session) => (
-                          <div
-                            key={session.id}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:bg-muted/50 hover:border-primary/50 group ${
-                              currentSession?.id === session.id ? 'bg-muted border-primary shadow-sm' : ''
-                            }`}
-                            onClick={() => continueChat(session)}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                  <p className="text-sm font-medium truncate">
-                                    {session.agentName}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <MessageSquare className="w-3 h-3" />
-                                  <span>{session.messages.length} сообщений</span>
-                                  <Clock className="w-3 h-3 ml-auto" />
-                                  <span>{formatTime(session.createdAt)}</span>
-                                </div>
-                                {session.messages.length > 0 && (
-                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                    {session.messages[session.messages.length - 1].content}
-                                  </p>
-                                )}
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteSession(session.id);
-                                }}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6">
-                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                          <MessageSquare className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium mb-1">
-                          {searchQuery ? 'Чаты не найдены' : 'История пуста'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {searchQuery ? 'Попробуйте другой запрос' : 'Начните новый чат с агентом'}
-                        </p>
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Chat Area */}
-          <div className="flex-1 flex flex-col">
-            {currentSession && selectedAgent ? (
-              <>
-                {/* Enhanced Chat Header */}
-                <Card className="mb-4">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Bot className="w-5 h-5" />
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
-                        </div>
-                        <div className="flex-1">
+                        <div className="flex-1 text-left">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{selectedAgent.name}</h3>
-                            {selectedAgent.aiProvider && (
+                            <span className="font-medium text-sm">{agent.name}</span>
+                            {agent.aiProvider && (
                               <div className="flex items-center gap-1">
-                                {getProviderIcon(selectedAgent.aiProvider)}
+                                {getProviderIcon(agent.aiProvider)}
                                 <Badge variant="secondary" className="text-xs">
-                                  {selectedAgent.aiModel}
+                                  {agent.aiModel}
                                 </Badge>
                               </div>
                             )}
-                            {isTyping && (
-                              <Badge variant="outline" className="text-xs animate-pulse">
-                                <Circle className="w-2 h-2 mr-1 fill-current" />
-                                печатает...
-                              </Badge>
-                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedAgent.description}
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {agent.description}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsFullscreen(!isFullscreen)}
-                          title="Полноэкранный режим"
-                        >
-                          <Maximize2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={exportChat}
-                          disabled={currentSession.messages.length === 0}
-                          title="Экспорт чата"
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={clearChat}
-                          disabled={currentSession.messages.length === 0}
-                        >
-                          <RotateCcw className="w-4 h-4 mr-1" />
-                          Очистить
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-
-                {/* Enhanced Messages Area */}
-                <Card className="flex-1 flex flex-col">
-                  <CardContent className="flex-1 p-0">
-                    <ScrollArea className="h-full p-4">
-                      {currentSession.messages.length > 0 ? (
-                        <div className="space-y-4">
-                          {currentSession.messages.map((message) => (
-                            <div
-                              key={message.id}
-                              className={`flex group ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div className={`max-w-[80%] ${
-                                message.role === 'user' ? 'order-2' : 'order-1'
-                              }`}>
-                                <div className={`rounded-xl p-4 shadow-sm ${
-                                  message.role === 'user' 
-                                    ? 'bg-primary text-primary-foreground ml-4' 
-                                    : 'bg-card border mr-4'
-                                }`}>
-                                  <div className="flex items-start gap-3">
-                                    {message.role === 'assistant' ? (
-                                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                                        <Bot className="w-3 h-3" />
-                                      </div>
-                                    ) : (
-                                      <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-1">
-                                        <User className="w-3 h-3" />
-                                      </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                                        {message.content}
-                                      </p>
-                                      <div className="flex items-center justify-between mt-2">
-                                        <span className="text-xs opacity-60">
-                                          {formatTime(message.timestamp)}
-                                        </span>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          onClick={() => copyMessage(message.content)}
-                                        >
-                                          <Copy className="w-3 h-3" />
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Typing Indicator */}
-                          {isGenerating && (
-                            <div className="flex justify-start">
-                              <div className="max-w-[80%]">
-                                <div className="bg-card border rounded-xl p-4 mr-4 shadow-sm">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                      <Bot className="w-3 h-3" />
-                                    </div>
-                                    <div className="flex gap-1">
-                                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                                    </div>
-                                    <span className="text-sm text-muted-foreground">AI генерирует ответ...</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          <div ref={messagesEndRef} />
-                        </div>
-                      ) : (
-                        <div className="flex-1 flex items-center justify-center">
-                          <div className="text-center max-w-md">
-                            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                              <MessageSquare className="w-8 h-8 text-muted-foreground" />
-                            </div>
-                            <h3 className="font-semibold mb-2">Начните разговор</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                              Отправьте сообщение агенту "{selectedAgent.name}" чтобы начать общение
-                            </p>
-                            <div className="space-y-2">
-                              <p className="text-xs text-muted-foreground">Попробуйте спросить:</p>
-                              <div className="space-y-1">
-                                {suggestedPrompts.slice(0, 2).map((prompt, index) => (
-                                  <Button
-                                    key={index}
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-xs h-auto p-2 w-full"
-                                    onClick={() => setInputMessage(prompt)}
-                                  >
-                                    {prompt}
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-
-                {/* Simple Input Area */}
-                <div className="mt-4 flex gap-3 items-end">
-                  <div className="flex-1">
-                    <Textarea
-                      placeholder="Напишите сообщение..."
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          sendMessage();
-                        }
-                      }}
-                      className="min-h-[60px] resize-none"
-                      disabled={isGenerating}
-                    />
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <Bot className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!inputMessage.trim() || isGenerating}
-                    size="icon"
-                    className="h-[60px] w-12"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
+                  <h3 className="text-lg font-medium mb-2">Нет агентов</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Создайте своего первого AI агента для начала работы
+                  </p>
+                  <Button onClick={() => window.location.href = '/my-agents'}>
+                    Создать агента
                   </Button>
                 </div>
-              </>
-            ) : (
-              /* Empty State */
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center max-w-md">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-6">
-                    <MessageSquare className="w-10 h-10 text-primary" />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Chat Interface */}
+        {selectedAgent && currentSession && (
+          <div className="flex flex-col h-[calc(100vh-280px)]">
+            
+            {/* Chat Header */}
+            <div className="flex items-center justify-between p-4 border-b bg-card rounded-t-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-medium">{selectedAgent.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {getProviderIcon(selectedAgent.aiProvider)}
+                    <span>{selectedAgent.aiModel}</span>
+                    {isTyping && (
+                      <span className="flex items-center gap-1">
+                        <Circle className="w-2 h-2 animate-pulse" />
+                        печатает...
+                      </span>
+                    )}
                   </div>
-                  <h2 className="text-2xl font-bold mb-2">Добро пожаловать в Playground</h2>
-                  <p className="text-muted-foreground mb-6">
-                    Выберите AI агента из списка слева чтобы начать общение или создайте нового агента
-                  </p>
-                  
-                  {userAgents.length === 0 ? (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-muted/50 rounded-lg border-dashed border-2">
-                        <Bot className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground mb-3">
-                          У вас пока нет агентов
-                        </p>
-                        <Button onClick={() => window.location.href = '/my-agents'}>
-                          <Bot className="w-4 h-4 mr-2" />
-                          Создать первого агента
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      {suggestedPrompts.slice(0, 4).map((prompt, index) => (
-                        <div
-                          key={index}
-                          className="p-3 bg-muted/30 rounded-lg border text-left cursor-pointer hover:bg-muted/50 transition-colors"
-                        >
-                          <p className="text-sm">{prompt}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
-            )}
+              
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={clearChat}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-4 bg-card">
+              <div className="space-y-4">
+                {currentSession.messages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Начните разговор</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Задайте вопрос агенту {selectedAgent.name}
+                    </p>
+                    
+                    {/* Suggested Prompts */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Попробуйте спросить:</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl mx-auto">
+                        {suggestedPrompts.map((prompt, index) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            className="text-left h-auto p-3"
+                            onClick={() => setInputMessage(prompt)}
+                          >
+                            <span className="text-xs">{prompt}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  currentSession.messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {message.role === 'assistant' && (
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+                          <Bot className="w-4 h-4" />
+                        </div>
+                      )}
+                      
+                      <div className={`max-w-[70%] ${message.role === 'user' ? 'order-2' : ''}`}>
+                        <div
+                          className={`p-3 rounded-lg ${
+                            message.role === 'user'
+                              ? 'bg-primary text-primary-foreground ml-auto'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                        
+                        <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
+                          message.role === 'user' ? 'justify-end' : 'justify-start'
+                        }`}>
+                          <span>{formatTime(message.timestamp)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-1"
+                            onClick={() => copyMessage(message.content)}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {message.role === 'user' && (
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+                          <User className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+                
+                {isTyping && (
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                    <div className="bg-muted p-3 rounded-lg">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+
+            {/* Input */}
+            <div className="p-4 border-t bg-card rounded-b-lg">
+              <div className="flex gap-2">
+                <Input
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder={`Сообщение для ${selectedAgent.name}...`}
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  disabled={isGenerating}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={!inputMessage.trim() || isGenerating}
+                  size="icon"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   );
