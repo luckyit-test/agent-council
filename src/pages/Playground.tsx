@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ interface ChatSession {
 }
 
 const Playground = () => {
+  const isMobile = useIsMobile();
   const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<UserAgent | null>(null);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
@@ -70,6 +72,20 @@ const Playground = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Auto-collapse sidebar on mobile and when starting a chat
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  }, [isMobile]);
+
+  // Auto-collapse when starting a new chat on mobile
+  useEffect(() => {
+    if (currentSession && isMobile) {
+      setSidebarCollapsed(true);
+    }
+  }, [currentSession, isMobile]);
 
   // Load user agents
   useEffect(() => {
