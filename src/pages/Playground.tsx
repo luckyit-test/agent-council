@@ -136,9 +136,9 @@ const Playground = () => {
     setIsTyping(true);
 
     try {
-      // Determine which AI provider to use
+      // Determine which AI provider to use - use agent's configured provider or OpenAI as default
       const aiProvider = selectedAgent.aiProvider || 'openai';
-      const aiModel = selectedAgent.aiModel || 'gpt-4';
+      const aiModel = selectedAgent.aiModel || (aiProvider === 'openai' ? 'gpt-4o-mini' : 'claude-3-sonnet');
       
       // Simulate typing delay
       await new Promise(resolve => setTimeout(resolve, 800));
