@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { AgentCard } from "@/components/AgentCard";
 import { CreateAgentDialog } from "@/components/CreateAgentDialog";
+import { AgentDetailDialog } from "@/components/AgentDetailDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,8 @@ const mockAgents = [
 const Agents = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [selectedAgent, setSelectedAgent] = useState<typeof mockAgents[0] | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   const filteredAgents = mockAgents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,6 +72,14 @@ const Agents = () => {
     const matchesType = typeFilter === "all" || agent.type === typeFilter;
     return matchesSearch && matchesType;
   });
+
+  const handleAgentSelect = (agentId: string) => {
+    const agent = mockAgents.find(a => a.id === agentId);
+    if (agent) {
+      setSelectedAgent(agent);
+      setDetailDialogOpen(true);
+    }
+  };
 
   return (
     <Layout>
@@ -160,6 +171,7 @@ const Agents = () => {
             <AgentCard
               key={agent.id}
               {...agent}
+              onSelect={handleAgentSelect}
             />
           ))}
         </div>
@@ -173,6 +185,13 @@ const Agents = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Agent Detail Dialog */}
+        <AgentDetailDialog
+          agent={selectedAgent}
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+        />
       </div>
     </Layout>
   );
