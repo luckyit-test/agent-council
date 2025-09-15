@@ -17,17 +17,8 @@ import {
   Zap,
   Shield,
   Copy,
-  RotateCcw,
-  Edit3,
-  MoreHorizontal,
-  Download,
-  Share,
-  Settings,
-  ChevronDown,
   Loader2,
   Circle,
-  Maximize2,
-  Star
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
@@ -55,7 +46,6 @@ const Playground = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -248,75 +238,95 @@ const Playground = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto h-[calc(100vh-120px)]">
+      <div className="max-w-7xl mx-auto h-[calc(100vh-120px)] flex flex-col">
         
-        {/* Agent Selection Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2 mb-4">
-            <MessageSquare className="w-6 h-6" />
-            Playground
-          </h1>
-          
-          {/* Agent Selection */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Выберите агента для общения</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {userAgents.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {userAgents.map((agent) => (
-                    <Button
-                      key={agent.id}
-                      variant={selectedAgent?.id === agent.id ? "default" : "outline"}
-                      className="h-auto p-4 justify-start"
-                      onClick={() => startNewChat(agent)}
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Bot className="w-4 h-4" />
+        {/* Compact Header with Agent Selector */}
+        <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-lg border">
+          <div className="flex items-center gap-4">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            <h1 className="text-lg font-semibold">Playground</h1>
+            
+            {/* Agent Selector */}
+            <div className="flex items-center gap-3">
+              <Select value={selectedAgent?.id || ""} onValueChange={(value) => {
+                const agent = userAgents.find(a => a.id === value);
+                if (agent) startNewChat(agent);
+              }}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Выберите агента для чата">
+                    {selectedAgent && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-primary/10 flex items-center justify-center">
+                          <Bot className="w-3 h-3" />
                         </div>
-                        <div className="flex-1 text-left">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{agent.name}</span>
-                            {agent.aiProvider && (
-                              <div className="flex items-center gap-1">
-                                {getProviderIcon(agent.aiProvider)}
-                                <Badge variant="secondary" className="text-xs">
-                                  {agent.aiModel}
-                                </Badge>
-                              </div>
-                            )}
+                        <span className="font-medium">{selectedAgent.name}</span>
+                        {selectedAgent.aiProvider && (
+                          <div className="flex items-center gap-1">
+                            {getProviderIcon(selectedAgent.aiProvider)}
+                            <Badge variant="secondary" className="text-xs h-4">
+                              {selectedAgent.aiModel}
+                            </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {agent.description}
-                          </p>
-                        </div>
+                        )}
                       </div>
-                    </Button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                    <Bot className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">Нет агентов</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Создайте своего первого AI агента для начала работы
-                  </p>
-                  <Button onClick={() => window.location.href = '/my-agents'}>
-                    Создать агента
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {userAgents.length > 0 ? (
+                    userAgents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="w-4 h-4 rounded bg-primary/10 flex items-center justify-center">
+                            <Bot className="w-3 h-3" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{agent.name}</span>
+                              {agent.aiProvider && (
+                                <div className="flex items-center gap-1">
+                                  {getProviderIcon(agent.aiProvider)}
+                                  <Badge variant="secondary" className="text-xs h-4">
+                                    {agent.aiModel}
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                              {agent.description}
+                            </div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center">
+                      <div className="text-sm text-muted-foreground mb-2">Нет агентов</div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => window.location.href = '/my-agents'}
+                      >
+                        Создать агента
+                      </Button>
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Quick Actions */}
+            <Button variant="outline" size="sm" onClick={() => window.location.href = '/my-agents'}>
+              Создать агента
+            </Button>
+          </div>
         </div>
 
         {/* Chat Interface */}
-        {selectedAgent && currentSession && (
-          <div className="flex flex-col h-[calc(100vh-280px)]">
+        {selectedAgent && currentSession ? (
+          <div className="flex flex-col flex-1 min-h-0">
             
             {/* Chat Header */}
             <div className="flex items-center justify-between p-4 border-b bg-card rounded-t-lg">
@@ -464,6 +474,21 @@ const Playground = () => {
                   )}
                 </Button>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center max-w-md">
+              <MessageSquare className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Добро пожаловать в Playground</h3>
+              <p className="text-muted-foreground mb-4">
+                Выберите агента из списка выше, чтобы начать общение
+              </p>
+              {userAgents.length === 0 && (
+                <Button onClick={() => window.location.href = '/my-agents'}>
+                  Создать первого агента
+                </Button>
+              )}
             </div>
           </div>
         )}
