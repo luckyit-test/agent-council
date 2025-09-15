@@ -30,7 +30,7 @@ export function AppSidebar() {
   const handleMouseLeave = () => {
     const timeout = setTimeout(() => {
       setIsCollapsed(true);
-    }, 500); // Больше времени для комфорта
+    }, 200); // Быстрее сворачивается
     setHoverTimeout(timeout);
   };
 
@@ -45,21 +45,21 @@ export function AppSidebar() {
 
   return (
     <aside 
-      className={`fixed left-0 top-0 h-full z-50 transition-all duration-500 ease-in-out ${
+      className={`transition-all duration-300 ease-out ${
         isCollapsed ? "w-16" : "w-64"
-      } bg-card/95 backdrop-blur-lg border-r border-border/50 shadow-2xl`} 
+      } bg-card/95 backdrop-blur-sm border-r border-border/30 flex flex-col h-full shadow-sm`} 
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Header */}
-      <div className="px-4 py-6 border-b border-border/30">
+      <div className="px-3 py-4 border-b border-border/20">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-ai rounded-lg flex items-center justify-center shrink-0 shadow-lg">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
+          <div className="w-8 h-8 bg-gradient-ai rounded-lg flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
           </div>
           {!isCollapsed && (
-            <div className="animate-fade-in opacity-0 animate-delay-150" style={{ animation: 'fade-in 0.3s ease-out 0.2s forwards' }}>
-              <h2 className="font-bold text-lg">AI Platform</h2>
+            <div className="animate-fade-in">
+              <h2 className="font-semibold text-sm">AI Platform</h2>
               <p className="text-xs text-muted-foreground">Агенты & Боты</p>
             </div>
           )}
@@ -67,10 +67,10 @@ export function AppSidebar() {
       </div>
 
       {/* Navigation */}
-      <div className="px-2 py-4 flex-1 overflow-hidden">
+      <div className="px-2 py-3 flex-1 overflow-hidden">
         <div>
           {!isCollapsed && (
-            <div className="px-3 mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider opacity-0 animate-fade-in" style={{ animation: 'fade-in 0.3s ease-out 0.3s forwards' }}>
+            <div className="px-3 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Навигация
             </div>
           )}
@@ -84,24 +84,21 @@ export function AppSidebar() {
                   to={item.url}
                   end
                   className={`
-                    relative group transition-all duration-300 ease-out flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:shadow-md
+                    relative group transition-all duration-200 flex items-center gap-3 w-full px-3 py-2 rounded-lg
                     ${isActive 
-                      ? "bg-primary/15 text-primary shadow-lg scale-105" 
-                      : "hover:bg-muted/70 hover:text-foreground hover:scale-102"
+                      ? "bg-primary/15 text-primary shadow-sm" 
+                      : "hover:bg-muted/50 hover:text-foreground"
                     }
                     ${isCollapsed ? "justify-center" : "justify-start"}
                   `}
-                  style={{ 
-                    animationDelay: `${index * 0.05}s`,
-                    transform: isCollapsed ? 'scale(1)' : 'scale(1)'
-                  }}
+                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  <item.icon className={`h-5 w-5 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+                  <item.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary' : ''}`} />
                   {!isCollapsed && (
-                    <span className="font-medium transition-all duration-300 opacity-0 animate-fade-in" style={{ animation: 'fade-in 0.3s ease-out 0.4s forwards' }}>{item.title}</span>
+                    <span className="font-medium text-sm animate-fade-in">{item.title}</span>
                   )}
                   {isActive && !isCollapsed && (
-                    <div className="absolute right-2 w-2 h-2 bg-primary rounded-full animate-pulse shadow-lg" />
+                    <div className="absolute right-2 w-1.5 h-1.5 bg-primary rounded-full" />
                   )}
                 </NavLink>
               );
@@ -109,20 +106,20 @@ export function AppSidebar() {
           </nav>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - только когда развернуто */}
         {!isCollapsed && (
-          <div className="mt-8">
-            <div className="px-3 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Быстрые действия
+          <div className="mt-6 px-3">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+              Статистика
             </div>
-            <div className="px-3 py-2 bg-gradient-ai/10 rounded-lg border border-primary/20 animate-fade-in">
+            <div className="p-3 bg-gradient-ai/5 rounded-lg border border-primary/10">
               <div className="flex items-center gap-2 mb-1">
-                <Brain className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">6 Агентов</span>
+                <Brain className="w-3 h-3 text-primary" />
+                <span className="text-xs font-medium">6 Агентов</span>
               </div>
               <div className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium">3 Бота</span>
+                <Bot className="w-3 h-3 text-accent" />
+                <span className="text-xs font-medium">3 Бота</span>
               </div>
             </div>
           </div>
