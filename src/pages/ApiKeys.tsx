@@ -236,7 +236,7 @@ const ApiKeys = () => {
       case 'testing':
         return <Badge className="bg-blue-100 text-blue-700">Тестирование...</Badge>;
       case 'valid':
-        return <Badge className="bg-green-100 text-green-700">Работает</Badge>;
+        return <Badge className="bg-primary/10 text-primary">Работает</Badge>;
       case 'invalid':
         return <Badge variant="destructive">Ошибка</Badge>;
     }
@@ -247,7 +247,7 @@ const ApiKeys = () => {
       case 'testing':
         return <Loader2 className="w-4 h-4 animate-spin" />;
       case 'valid':
-        return <Check className="w-4 h-4 text-green-600" />;
+        return <Check className="w-4 h-4 text-primary" />;
       case 'invalid':
         return <X className="w-4 h-4 text-red-600" />;
       default:

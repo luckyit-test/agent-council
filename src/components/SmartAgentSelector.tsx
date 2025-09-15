@@ -128,7 +128,7 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
       type: 'technical' as const,
       label: 'Технические',
       agents: filteredAgents.filter(a => a.type === 'technical'),
-      color: 'text-green-600'
+      color: 'text-primary'
     },
     {
       type: 'other' as const,

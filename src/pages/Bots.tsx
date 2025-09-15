@@ -38,7 +38,7 @@ const mockBots = [
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "running":
-      return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Активен</Badge>;
+      return <Badge className="bg-primary/10 text-primary border-primary/20">Активен</Badge>;
     case "paused":
       return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Приостановлен</Badge>;
     case "stopped":
