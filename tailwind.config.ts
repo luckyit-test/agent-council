@@ -94,6 +94,26 @@ export default {
             height: "0",
           },
         },
+        "fade-in": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px)"
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0)"
+          }
+        },
+        "scale-in": {
+          "0%": {
+            transform: "scale(0.95)",
+            opacity: "0"
+          },
+          "100%": {
+            transform: "scale(1)",
+            opacity: "1"
+          }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -101,8 +121,19 @@ export default {
         "ai-pulse": "ai-pulse 2s ease-in-out infinite",
         "working-glow": "working-glow 1.5s ease-in-out infinite",
         "agent-thinking": "agent-thinking 1s ease-in-out infinite",
+        "fade-in": "fade-in 0.3s ease-out",
+        "scale-in": "scale-in 0.2s ease-out",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function({ addUtilities }) {
+      addUtilities({
+        '.hover-scale': {
+          '@apply transition-transform duration-200 hover:scale-105': {},
+        },
+      })
+    }
+  ],
 } satisfies Config;
