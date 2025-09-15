@@ -261,30 +261,8 @@ const Playground = () => {
         {selectedAgent && currentSession ? (
           <div className="flex flex-col flex-1 min-h-0">
             
-            {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-card rounded-t-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-medium">{selectedAgent.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {getProviderIcon(selectedAgent.aiProvider)}
-                    <span>{selectedAgent.aiModel}</span>
-                    {isTyping && (
-                      <span className="flex items-center gap-1">
-                        <Circle className="w-2 h-2 animate-pulse" />
-                        печатает...
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4 bg-card">
+            <ScrollArea className="flex-1 p-4 bg-card rounded-t-lg">
               <div className="space-y-4">
                 {currentSession.messages.length === 0 ? (
                   <div className="text-center py-8">
@@ -365,6 +343,10 @@ const Playground = () => {
                       <Bot className="w-4 h-4" />
                     </div>
                     <div className="bg-muted p-3 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        {getProviderIcon(selectedAgent.aiProvider)}
+                        <span>{selectedAgent.name} печатает...</span>
+                      </div>
                       <div className="flex gap-1">
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -381,18 +363,20 @@ const Playground = () => {
             {/* Input */}
             <div className="p-4 border-t bg-card rounded-b-lg">
               <div className="flex gap-2">
-                <Input
+                <textarea
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   placeholder={`Сообщение для ${selectedAgent.name}...`}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
                   disabled={isGenerating}
-                  className="flex-1"
+                  className="flex-1 min-h-[120px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  rows={4}
                 />
                 <Button
                   onClick={sendMessage}
                   disabled={!inputMessage.trim() || isGenerating}
                   size="icon"
+                  className="self-end"
                 >
                   {isGenerating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
