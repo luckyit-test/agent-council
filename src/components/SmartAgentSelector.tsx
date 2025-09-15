@@ -243,9 +243,9 @@ export const SmartAgentSelector = ({ agents, selectedAgent, onSelectAgent }: Sma
                             <div
                               className={cn(
                                 "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
-                                "hover:bg-accent/50",
-                                selectedAgent?.id === agent.id && "bg-accent",
-                                expandedAgent === agent.id && "bg-accent"
+                                "hover:bg-secondary",
+                                selectedAgent?.id === agent.id && "bg-secondary",
+                                expandedAgent === agent.id && "bg-secondary"
                               )}
                               onClick={() => handleAgentSelect(agent)}
                             >
