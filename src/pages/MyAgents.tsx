@@ -8,6 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Search, Users } from "lucide-react";
 import { getUserAgents, removeUserAgent, type UserAgent } from "@/utils/agentStorage";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +29,8 @@ const MyAgents = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
   const [showMarketplaceAgents, setShowMarketplaceAgents] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [agentToDelete, setAgentToDelete] = useState<UserAgent | null>(null);
   const { toast } = useToast();
 
   // Load user agents from localStorage
@@ -59,12 +71,22 @@ const MyAgents = () => {
   };
 
   const handleAgentDelete = (agentId: string) => {
-    const success = removeUserAgent(agentId);
+    const agent = userAgents.find(a => a.id === agentId);
+    if (agent) {
+      setAgentToDelete(agent);
+      setShowDeleteDialog(true);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (!agentToDelete) return;
+    
+    const success = removeUserAgent(agentToDelete.id);
     if (success) {
       refreshAgents();
       toast({
         title: "Агент удален",
-        description: "Агент удален из ваших агентов"
+        description: `"${agentToDelete.name}" удален из ваших агентов`
       });
     } else {
       toast({
@@ -73,6 +95,9 @@ const MyAgents = () => {
         variant: "destructive"
       });
     }
+    
+    setShowDeleteDialog(false);
+    setAgentToDelete(null);
   };
 
   return (
@@ -166,6 +191,24 @@ const MyAgents = () => {
           onOpenChange={setDetailDialogOpen}
           onAgentUpdated={refreshAgents}
         />
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Удалить агента?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Вы действительно хотите удалить агента "{agentToDelete?.name}"? Это действие нельзя отменить.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );

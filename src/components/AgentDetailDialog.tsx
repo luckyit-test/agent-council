@@ -338,16 +338,10 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Button onClick={() => setIsEditing(true)} className="flex-1">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Редактировать
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowDeleteDialog(true)}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Удалить
-                    </Button>
-                  </>
+                  <Button onClick={() => setIsEditing(true)} className="flex-1">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Редактировать
+                  </Button>
                 )}
               </>
             ) : (
@@ -359,7 +353,7 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
           </div>
         </div>
 
-        {/* Delete Confirmation Dialog */}
+        {/* Delete Confirmation Dialog - moved to parent component */}
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
