@@ -46,7 +46,7 @@ serve(async (req) => {
           messages: apiMessages,
           temperature: 0.7,
           top_p: 0.9,
-          max_tokens: 2000,
+          max_tokens: 4000,
           return_images: false,
           return_related_questions: false,
           search_recency_filter: 'month',

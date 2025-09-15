@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Send,
   Bot,
@@ -19,6 +21,7 @@ import {
   Loader2,
   Circle,
   Clock,
+  Timer,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
@@ -51,6 +54,8 @@ const Playground = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [generationStartTime, setGenerationStartTime] = useState<Date | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -84,6 +89,19 @@ const Playground = () => {
       localStorage.setItem('chat-sessions', JSON.stringify(chatSessions));
     }
   }, [chatSessions]);
+
+  // Timer for generation progress
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isGenerating && generationStartTime) {
+      interval = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - generationStartTime.getTime()) / 1000));
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isGenerating, generationStartTime]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -144,6 +162,8 @@ const Playground = () => {
     setInputMessage("");
     setIsGenerating(true);
     setIsTyping(true);
+    setGenerationStartTime(new Date());
+    setElapsedTime(0);
 
     try {
       // Determine which AI provider to use - use agent's configured provider or OpenAI as default
@@ -204,6 +224,8 @@ const Playground = () => {
     } finally {
       setIsGenerating(false);
       setIsTyping(false);
+      setGenerationStartTime(null);
+      setElapsedTime(0);
     }
   };
 
@@ -240,6 +262,12 @@ const Playground = () => {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  const formatElapsedTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const suggestedPrompts = selectedAgent ? [
@@ -486,7 +514,15 @@ const Playground = () => {
                               : 'bg-muted'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          {message.role === 'user' ? (
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          ) : (
+                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
+                          )}
                         </div>
                         
                         <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
@@ -522,6 +558,15 @@ const Playground = () => {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         {getProviderIcon(selectedAgent.aiProvider)}
                         <span>{selectedAgent.name} печатает...</span>
+                        {selectedAgent.aiProvider === 'perplexity' && (
+                          <div className="flex items-center gap-1 text-xs">
+                            <Timer className="w-3 h-3" />
+                            <span>{formatElapsedTime(elapsedTime)}</span>
+                            {selectedAgent.aiModel === 'sonar-deep-research' && elapsedTime < 180 && (
+                              <span className="text-orange-500">(до 3-8 мин для Deep Research)</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-1">
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
