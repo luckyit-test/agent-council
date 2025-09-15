@@ -124,11 +124,7 @@ export const AgentCard = ({
           {description}
         </CardDescription>
         
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-            <span>{rating}</span>
-          </div>
+        <div className="flex items-center justify-end text-xs text-muted-foreground">
           <span>{usageCount} использований</span>
         </div>
       </CardContent>
