@@ -40,6 +40,15 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
       return;
     }
 
+    if (agentPrompt.length < 10) {
+      toast({
+        title: "Ошибка",
+        description: "Промпт должен содержать не менее 10 символов",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const success = createCustomAgent({
       name: agentName,
       type: agentType,
@@ -156,8 +165,13 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                 className="mt-1 min-h-32 font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Промпт определяет как агент будет вести себя и отвечать на запросы
+                Промпт определяет как агент будет вести себя и отвечать на запросы (минимум 10 символов)
               </p>
+              <div className="text-right">
+                <span className="text-xs text-muted-foreground">
+                  {agentPrompt.length} символов
+                </span>
+              </div>
             </div>
           </div>
           
@@ -168,7 +182,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
             </Button>
             <Button 
               onClick={handleCreateAgent}
-              disabled={!agentName || !agentType || !agentDescription || !agentPrompt}
+              disabled={!agentName || !agentType || !agentDescription || !agentPrompt || agentPrompt.length < 10}
               className="bg-gradient-ai border-0"
             >
               Создать агента
