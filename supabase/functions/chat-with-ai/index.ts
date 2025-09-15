@@ -42,7 +42,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: model || 'llama-3.1-sonar-large-128k-online',
+          model: model || 'sonar',
           messages: apiMessages,
           temperature: 0.7,
           top_p: 0.9,
