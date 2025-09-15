@@ -59,9 +59,11 @@ const aiProviders = [
     label: "Perplexity", 
     icon: Search,
     models: [
-      { value: "llama-3.1-sonar-large-128k-online", label: "Llama 3.1 Sonar Large" },
-      { value: "llama-3.1-sonar-small-128k-online", label: "Llama 3.1 Sonar Small" },
-      { value: "llama-3.1-sonar-huge-128k-online", label: "Llama 3.1 Sonar Huge" }
+      { value: "sonar", label: "Sonar (быстрая модель)" },
+      { value: "sonar-pro", label: "Sonar Pro (продвинутая)" },
+      { value: "sonar-reasoning", label: "Sonar Reasoning (рассуждения)" },
+      { value: "sonar-reasoning-pro", label: "Sonar Reasoning Pro" },
+      { value: "sonar-deep-research", label: "Sonar Deep Research" }
     ]
   }
 ];
