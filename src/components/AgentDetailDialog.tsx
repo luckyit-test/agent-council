@@ -158,6 +158,8 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
       });
       setIsEditing(false);
       onAgentUpdated?.();
+      // Закрываем диалог после успешного сохранения
+      onOpenChange(false);
     } else {
       toast({
         title: "Ошибка",
