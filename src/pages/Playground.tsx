@@ -153,6 +153,11 @@ const Playground = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim() || !currentSession || !selectedAgent || isGenerating) return;
 
+    // Auto-collapse sidebar when sending first message on mobile or small screens
+    if ((isMobile || window.innerWidth < 1024) && currentSession.messages.length === 0) {
+      setSidebarCollapsed(true);
+    }
+
     const userMessage: Message = {
       id: `msg_${Date.now()}_user`,
       role: 'user',
