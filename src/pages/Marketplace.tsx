@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, Plus, Heart, Download, Eye, Brain, UserPlus, Check } from "lucide-react";
+import { Search, Plus, Heart, Download, Eye, Brain, UserPlus, Check, Filter, Star, TrendingUp, Clock } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AgentDetailDialog } from "@/components/AgentDetailDialog";
 import { addUserAgent, isAgentAdded } from "@/utils/agentStorage";
@@ -458,6 +459,8 @@ export default function Marketplace() {
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [addedToMyAgents, setAddedToMyAgents] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState("popular");
+  const [filterByType, setFilterByType] = useState("all");
   const { toast } = useToast();
 
   // Load already added agents on component mount
@@ -472,12 +475,30 @@ export default function Marketplace() {
   }, []);
 
   const filteredAgents = useMemo(() => {
-    return marketplaceAgents.filter(agent =>
-      agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }, [searchQuery]);
+    let filtered = marketplaceAgents.filter(agent => {
+      const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        agent.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        agent.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesType = filterByType === "all" || agent.type === filterByType;
+      
+      return matchesSearch && matchesType;
+    });
+
+    // Сортировка
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "popular":
+          return b.name.localeCompare(a.name); // Mock: по алфавиту как популярность
+        case "newest":
+          return a.name.localeCompare(b.name); // Mock: обратный алфавит как новизна
+        case "rating":
+          return b.name.localeCompare(a.name); // Mock
+        default:
+          return 0;
+      }
+    });
+  }, [searchQuery, filterByType, sortBy]);
 
   const filteredBots = useMemo(() => {
     return marketplaceBots.filter(bot =>
@@ -550,52 +571,63 @@ export default function Marketplace() {
 
   const MarketplaceCard = ({ item, type }: { item: any; type: string }) => (
     <Card className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-muted-foreground/20">
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+      <CardHeader className="pb-3 pt-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center border ${typeColors[item.type as keyof typeof typeColors]}`}>
-              <Brain className="w-5 h-5" />
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${typeColors[item.type as keyof typeof typeColors]}`}>
+              <Brain className="w-4 h-4" />
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <CardTitle className="text-lg">{item.name}</CardTitle>
-                <Badge className={typeColors[item.type as keyof typeof typeColors]}>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <CardTitle className="text-base">{item.name}</CardTitle>
+                <Badge variant="outline" className="text-xs">
                   {item.type}
                 </Badge>
               </div>
               
-              <CardDescription className="text-sm leading-relaxed mb-3">
+              <CardDescription className="text-sm leading-snug line-clamp-2 mb-2">
                 {item.description}
               </CardDescription>
               
-              {item.capabilities && (
-                <p className="text-sm text-muted-foreground mb-3">
-                  <strong>Что умеет:</strong> {item.capabilities}
-                </p>
-              )}
-              
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                <Avatar className="w-5 h-5">
-                  <AvatarFallback className="text-xs">{item.author[0]}</AvatarFallback>
-                </Avatar>
-                <span>by {item.author}</span>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                <div className="flex items-center gap-1">
+                  <Avatar className="w-4 h-4">
+                    <AvatarFallback className="text-xs">{item.author[0]}</AvatarFallback>
+                  </Avatar>
+                  <span>{item.author}</span>
+                </div>
+                
+                {/* Mock статистики */}
+                <div className="flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                  <span>4.8</span>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <Download className="w-3 h-3" />
+                  <span>1.2k</span>
+                </div>
               </div>
               
-              <div className="flex flex-wrap gap-1 mb-3">
-                {item.tags?.map((tag: string) => (
-                  <Badge key={tag} variant="outline" className="text-xs">
-                    #{tag}
+              <div className="flex flex-wrap gap-1">
+                {item.tags?.slice(0, 2).map((tag: string) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    {tag}
                   </Badge>
                 ))}
+                {item.tags?.length > 2 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{item.tags.length - 2}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
           
           <div className="flex flex-col gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={() => handleViewDetails(item)}>
-              <Eye className="w-4 h-4 mr-1" />
-              Подробнее
+              <Eye className="w-4 h-4" />
             </Button>
             {addedToMyAgents.has(item.id) ? (
               <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 px-2 py-1">
@@ -631,24 +663,70 @@ export default function Marketplace() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Маркетплейс</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl font-bold">Маркетплейс</h1>
+            <p className="text-sm text-muted-foreground">
               Готовые агенты, боты и задачи для вашего использования
             </p>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Поиск в маркетплейсе..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        {/* Search and Filters */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск агентов, ботов и задач..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="popular">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Популярные
+                  </div>
+                </SelectItem>
+                <SelectItem value="newest">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Новые
+                  </div>
+                </SelectItem>
+                <SelectItem value="rating">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4" />
+                    Рейтинг
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {activeTab === "agents" && (
+              <Select value={filterByType} onValueChange={setFilterByType}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все типы</SelectItem>
+                  <SelectItem value="analyst">Аналитик</SelectItem>
+                  <SelectItem value="creative">Творческий</SelectItem>
+                  <SelectItem value="technical">Технический</SelectItem>
+                  <SelectItem value="judge">Судья</SelectItem>
+                  <SelectItem value="researcher">Исследователь</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -665,17 +743,14 @@ export default function Marketplace() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="agents" className="mt-6">
-            <div className="space-y-8">
+          <TabsContent value="agents" className="mt-4">
+            <div className="space-y-6">
               {filteredAgents.length > 0 ? (
-                Object.entries(groupByCategory(filteredAgents)).map(([category, items]) => (
-                  <CategorySection 
-                    key={category} 
-                    categoryName={category} 
-                    items={items} 
-                    type="agent" 
-                  />
-                ))
+                <div className="space-y-4">
+                  {filteredAgents.map((agent) => (
+                    <MarketplaceCard key={agent.id} item={agent} type="agent" />
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">Агенты не найдены</p>
