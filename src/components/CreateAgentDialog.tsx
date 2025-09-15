@@ -50,7 +50,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
     if (success) {
       toast({
         title: "Агент создан",
-        description: `Агент "${agentName}" успешно создан и добавлен в ваш маркетплейс`
+        description: `Агент "${agentName}" успешно создан и добавлен в ваши агенты`
       });
 
       setOpen(false);

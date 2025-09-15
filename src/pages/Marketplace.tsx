@@ -494,6 +494,9 @@ export default function Marketplace() {
   }, [searchQuery]);
 
   const handleTryExample = (item: any) => {
+    // Immediately update UI state for better responsiveness
+    setAddedToMyAgents(prev => new Set([...prev, item.id]));
+    
     const success = addUserAgent({
       id: item.id,
       name: item.name,
@@ -506,13 +509,18 @@ export default function Marketplace() {
     });
     
     if (success) {
-      setAddedToMyAgents(prev => new Set([...prev, item.id]));
       toast({
         title: "Агент добавлен",
         description: `"${item.name}" добавлен в ваши агенты`
       });
       console.log("Adding to my agents:", item);
     } else {
+      // Revert UI state if operation failed
+      setAddedToMyAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(item.id);
+        return newSet;
+      });
       toast({
         title: "Агент уже добавлен",
         description: `"${item.name}" уже есть в ваших агентах`,

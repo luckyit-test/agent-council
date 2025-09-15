@@ -6,80 +6,20 @@ import { AgentDetailDialog } from "@/components/AgentDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Search, Users } from "lucide-react";
-import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
+import { getUserAgents, removeUserAgent, type UserAgent } from "@/utils/agentStorage";
+import { useToast } from "@/hooks/use-toast";
 
-const mockAgents = [
-  {
-    id: "1",
-    name: "Аналитик Pro",
-    type: "analyst",
-    description: "Глубокий анализ данных, выявление трендов и закономерностей. Способен обрабатывать большие объемы информации и предоставлять детальные отчеты.",
-    rating: 4.8,
-    usageCount: 1247,
-    isCustom: false
-  },
-  {
-    id: "2",
-    name: "Творческий Гений",
-    type: "creative",
-    description: "Генерация креативных идей и нестандартных решений для любых задач. Помогает в создании контента и поиске новых подходов.",
-    rating: 4.9,
-    usageCount: 892,
-    isCustom: false
-  },
-  {
-    id: "3",
-    name: "Техно-Эксперт",
-    type: "technical",
-    description: "Техническая экспертиза и решение сложных технических задач. Специализируется на программировании и системной архитектуре.",
-    rating: 4.7,
-    usageCount: 654,
-    isCustom: false
-  },
-  {
-    id: "4",
-    name: "Судья",
-    type: "judge",
-    description: "Оценка результатов работы агентов и формирование итогового решения. Обеспечивает объективную оценку и качественный анализ.",
-    rating: 4.9,
-    usageCount: 2156,
-    isCustom: false
-  },
-  {
-    id: "5",
-    name: "Исследователь",
-    type: "researcher",
-    description: "Поиск и анализ информации из различных источников. Проводит глубокие исследования и предоставляет структурированные данные.",
-    rating: 4.6,
-    usageCount: 987,
-    isCustom: false
-  },
-  {
-    id: "6",
-    name: "Мой Маркетолог",
-    type: "creative",
-    description: "Специализированный агент для маркетинговых задач и стратегий. Создан для анализа рынка и разработки продвижения.",
-    rating: 4.5,
-    usageCount: 123,
-    isCustom: true
-  },
-  {
-    id: "7",
-    name: "Персональный Аналитик",
-    type: "analyst",
-    description: "Настроенный под мои задачи аналитик для работы с финансовыми данными и бизнес-метриками.",
-    rating: 4.3,
-    usageCount: 67,
-    isCustom: true
-  }
-];
 
 const MyAgents = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<UserAgent | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
+  const [showMarketplaceAgents, setShowMarketplaceAgents] = useState(true);
+  const { toast } = useToast();
 
   // Load user agents from localStorage
   useEffect(() => {
@@ -91,9 +31,10 @@ const MyAgents = () => {
     return userAgents.filter(agent => {
       const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            agent.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesSearch;
+      const shouldShow = showMarketplaceAgents ? true : agent.isCustom;
+      return matchesSearch && shouldShow;
     });
-  }, [searchQuery, userAgents]);
+  }, [searchQuery, userAgents, showMarketplaceAgents]);
 
   const handleAgentSelect = (agentId: string) => {
     const agent = userAgents.find(a => a.id === agentId);
@@ -115,6 +56,23 @@ const MyAgents = () => {
   const refreshAgents = () => {
     const agents = getUserAgents();
     setUserAgents(agents);
+  };
+
+  const handleAgentDelete = (agentId: string) => {
+    const success = removeUserAgent(agentId);
+    if (success) {
+      refreshAgents();
+      toast({
+        title: "Агент удален",
+        description: "Агент удален из ваших агентов"
+      });
+    } else {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить агента",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -139,6 +97,18 @@ const MyAgents = () => {
           />
         </div>
 
+        {/* Filter Toggle */}
+        <div className="flex items-center justify-center gap-3 max-w-md mx-auto">
+          <Label htmlFor="show-marketplace" className="text-sm">
+            Показать агенты из маркетплейса
+          </Label>
+          <Switch
+            id="show-marketplace"
+            checked={showMarketplaceAgents}
+            onCheckedChange={setShowMarketplaceAgents}
+          />
+        </div>
+
         {/* Agents List */}
         {filteredAgents.length > 0 ? (
           <div className="space-y-4">
@@ -148,6 +118,7 @@ const MyAgents = () => {
                 {...agent}
                 onSelect={handleAgentSelect}
                 onEdit={handleAgentEdit}
+                onDelete={handleAgentDelete}
               />
             ))}
           </div>

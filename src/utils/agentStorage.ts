@@ -87,3 +87,19 @@ export const createCustomAgent = (agent: Omit<UserAgent, 'id' | 'isCustom' | 'ad
     return false;
   }
 };
+
+export const updateUserAgent = (agentId: string, updates: Partial<UserAgent>): boolean => {
+  try {
+    const userAgents = getUserAgents();
+    const agentIndex = userAgents.findIndex(a => a.id === agentId);
+    
+    if (agentIndex === -1) return false;
+    
+    userAgents[agentIndex] = { ...userAgents[agentIndex], ...updates };
+    localStorage.setItem(USER_AGENTS_KEY, JSON.stringify(userAgents));
+    return true;
+  } catch (error) {
+    console.error('Error updating user agent:', error);
+    return false;
+  }
+};

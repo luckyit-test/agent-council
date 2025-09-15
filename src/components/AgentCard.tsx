@@ -9,7 +9,8 @@ import {
   Search,
   User,
   Store,
-  Edit
+  Edit,
+  X
 } from "lucide-react";
 
 interface AgentCardProps {
@@ -24,6 +25,7 @@ interface AgentCardProps {
   isSelected?: boolean;
   onSelect?: (id: string) => void;
   onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 const getAgentIcon = (type: string) => {
@@ -66,7 +68,8 @@ export const AgentCard = ({
   description,
   isCustom,
   onSelect,
-  onEdit
+  onEdit,
+  onDelete
 }: AgentCardProps) => {
   return (
     <Card 
@@ -117,17 +120,31 @@ export const AgentCard = ({
             </div>
           </div>
           
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.(id);
-            }}
-            variant="ghost"
-            size="icon"
-            className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
-          >
-            <Edit className="w-5 h-5" />
-          </Button>
+          {isCustom ? (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(id);
+              }}
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
+            >
+              <Edit className="w-5 h-5" />
+            </Button>
+          ) : (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(id);
+              }}
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-10 w-10 text-muted-foreground hover:text-red-500"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </CardHeader>
     </Card>
