@@ -1,16 +1,20 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
-  Clock, 
   CheckCircle, 
-  AlertCircle, 
+  Clock, 
+  Brain, 
   Users, 
-  Brain,
+  Calendar,
+  Timer,
+  Eye,
   Play,
-  Eye
+  AlertCircle
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data for demonstration
 const activeTasks = [
@@ -93,6 +97,7 @@ const getAgentStatus = (status: string) => {
 };
 
 export const Dashboard = () => {
+  const { toast } = useToast();
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -206,12 +211,26 @@ export const Dashboard = () => {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast({
+                        title: "Задача открыта",
+                        description: `Просмотр задачи: ${task.title}`
+                      })}
+                    >
                       <Eye className="w-4 h-4 mr-1" />
                       Просмотр
                     </Button>
                     {task.status === "pending" && (
-                      <Button size="sm" className="bg-gradient-ai border-0">
+                      <Button 
+                        size="sm" 
+                        className="bg-gradient-ai border-0"
+                        onClick={() => toast({
+                          title: "Задача запущена",
+                          description: `Запущена задача: ${task.title}`
+                        })}
+                      >
                         <Play className="w-4 h-4 mr-1" />
                         Запустить
                       </Button>
