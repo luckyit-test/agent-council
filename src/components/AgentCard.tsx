@@ -7,10 +7,13 @@ import {
   Code, 
   Gavel, 
   Search,
-  Star,
   Plus,
   User,
-  Store
+  Store,
+  Play,
+  Settings,
+  Heart,
+  MoreHorizontal
 } from "lucide-react";
 
 interface AgentCardProps {
@@ -28,23 +31,23 @@ interface AgentCardProps {
 
 const getAgentIcon = (type: string) => {
   switch (type) {
-    case "analyst": return <Brain className="w-5 h-5" />;
-    case "creative": return <Lightbulb className="w-5 h-5" />;
-    case "technical": return <Code className="w-5 h-5" />;
-    case "judge": return <Gavel className="w-5 h-5" />;
-    case "researcher": return <Search className="w-5 h-5" />;
-    default: return <Brain className="w-5 h-5" />;
+    case "analyst": return <Brain className="w-4 h-4" />;
+    case "creative": return <Lightbulb className="w-4 h-4" />;
+    case "technical": return <Code className="w-4 h-4" />;
+    case "judge": return <Gavel className="w-4 h-4" />;
+    case "researcher": return <Search className="w-4 h-4" />;
+    default: return <Brain className="w-4 h-4" />;
   }
 };
 
 const getAgentColor = (type: string) => {
   switch (type) {
-    case "analyst": return "bg-agent-analyst text-primary-foreground";
-    case "creative": return "bg-agent-creative text-primary-foreground";
-    case "technical": return "bg-agent-technical text-primary-foreground";
-    case "judge": return "bg-agent-judge text-primary-foreground";
-    case "researcher": return "bg-agent-researcher text-primary-foreground";
-    default: return "bg-primary text-primary-foreground";
+    case "analyst": return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
+    case "creative": return "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400";
+    case "technical": return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
+    case "judge": return "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400";
+    case "researcher": return "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400";
+    default: return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";
   }
 };
 
@@ -72,25 +75,26 @@ export const AgentCard = ({
 }: AgentCardProps) => {
   return (
     <Card 
-      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 ${
         isSelected 
-          ? "ring-2 ring-primary shadow-ai" 
+          ? "ring-2 ring-primary shadow-lg shadow-primary/20" 
           : "hover:bg-card/80"
       }`}
       onClick={() => onSelect?.(id)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getAgentColor(type)}`}>
+          <div className="flex items-start gap-3 flex-1">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getAgentColor(type)} transition-transform group-hover:scale-110`}>
               {getAgentIcon(type)}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-base">{name}</CardTitle>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <CardTitle className="text-base truncate">{name}</CardTitle>
                 <Badge 
                   variant={isCustom ? "default" : "secondary"} 
-                  className="text-xs flex items-center gap-1"
+                  className="text-xs flex items-center gap-1 shrink-0"
                 >
                   {isCustom ? (
                     <>
@@ -105,27 +109,65 @@ export const AgentCard = ({
                   )}
                 </Badge>
               </div>
-              <Badge variant="outline" className="mt-1 text-xs">
+              
+              <Badge variant="outline" className="text-xs mb-2">
                 {getAgentTypeName(type)}
               </Badge>
+              
+              <CardDescription className="text-sm line-clamp-2 group-hover:text-foreground/80 transition-colors">
+                {description}
+              </CardDescription>
             </div>
           </div>
           
-          {isSelected && (
-            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-              <Plus className="w-4 h-4 text-primary-foreground rotate-45" />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {isSelected && (
+              <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center animate-scale-in">
+                <Plus className="w-4 h-4 text-primary-foreground rotate-45" />
+              </div>
+            )}
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Handle more options
+              }}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       
-      <CardContent>
-        <CardDescription className="text-sm mb-4">
-          {description}
-        </CardDescription>
-        
-        <div className="flex items-center justify-end text-xs text-muted-foreground">
-          <span>{usageCount} использований</span>
+      <CardContent className="pt-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              {usageCount} использований
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="sm" className="h-7 px-2">
+              <Play className="w-3 h-3 mr-1" />
+              Запустить
+            </Button>
+            
+            {isCustom && (
+              <Button variant="ghost" size="sm" className="h-7 px-2">
+                <Settings className="w-3 h-3 mr-1" />
+                Настроить
+              </Button>
+            )}
+            
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <Heart className="w-3 h-3" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
