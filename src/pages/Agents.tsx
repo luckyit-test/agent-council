@@ -171,8 +171,8 @@ const Agents = () => {
           </CardContent>
         </Card>
 
-        {/* Agents Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Agents List */}
+        <div className="space-y-3">
           {filteredAgents.map((agent) => (
             <AgentCard
               key={agent.id}
