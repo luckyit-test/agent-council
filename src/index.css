@@ -66,12 +66,14 @@ All colors MUST be HSL.
     --pulse-ai: ai-pulse 2s ease-in-out infinite;
     --glow-working: working-glow 1.5s ease-in-out infinite;
   }
-
 }
 
 @layer base {
   * {
     @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
@@ -155,57 +157,4 @@ All colors MUST be HSL.
 .prose th {
   background-color: hsl(var(--muted));
   font-weight: 600;
-}
-
-  body {
-    @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
-
-  /* AI Platform Animations */
-  @keyframes ai-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.05); }
-  }
-
-  @keyframes working-glow {
-    0%, 100% { box-shadow: 0 2px 15px hsl(var(--status-working) / 0.2); }
-    50% { box-shadow: 0 4px 25px hsl(var(--status-working) / 0.35); }
-  }
-
-  @keyframes agent-thinking {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-2px); }
-    100% { transform: translateY(0px); }
-  }
-
-  .ai-pulse {
-    animation: var(--pulse-ai);
-  }
-
-  .working-glow {
-    animation: var(--glow-working);
-  }
-
-  .agent-thinking {
-    animation: agent-thinking 1s ease-in-out infinite;
-  }
-
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: hsl(var(--muted));
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--ring));
-  }
 }
