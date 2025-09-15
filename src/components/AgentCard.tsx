@@ -10,7 +10,9 @@ import {
   User,
   Store,
   Edit,
-  X
+  X,
+  Zap,
+  Shield
 } from "lucide-react";
 
 interface AgentCardProps {
@@ -23,6 +25,8 @@ interface AgentCardProps {
   usageCount?: number;
   isCustom: boolean;
   isSelected?: boolean;
+  aiProvider?: string;
+  aiModel?: string;
   onSelect?: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -61,12 +65,32 @@ const getAgentTypeName = (type: string) => {
   }
 };
 
+const getProviderIcon = (provider?: string) => {
+  switch (provider) {
+    case 'openai': return <Zap className="w-3 h-3" />;
+    case 'anthropic': return <Shield className="w-3 h-3" />;
+    case 'google': return <Brain className="w-3 h-3" />;
+    default: return null;
+  }
+};
+
+const getProviderName = (provider?: string) => {
+  switch (provider) {
+    case 'openai': return 'OpenAI';
+    case 'anthropic': return 'Anthropic';
+    case 'google': return 'Google';
+    default: return 'AI';
+  }
+};
+
 export const AgentCard = ({
   id,
   name,
   type,
   description,
   isCustom,
+  aiProvider,
+  aiModel,
   onSelect,
   onEdit,
   onDelete
@@ -114,9 +138,19 @@ export const AgentCard = ({
                 </div>
               </div>
               
-              <CardDescription className="text-sm leading-snug line-clamp-2">
+              <CardDescription className="text-sm leading-snug line-clamp-2 mb-2">
                 {description}
               </CardDescription>
+
+              {/* AI Provider Info */}
+              {aiProvider && aiModel && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {getProviderIcon(aiProvider)}
+                  <span>{getProviderName(aiProvider)}</span>
+                  <span>•</span>
+                  <span>{aiModel}</span>
+                </div>
+              )}
             </div>
           </div>
           

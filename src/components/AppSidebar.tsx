@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Brain, Bot, Settings, Home, Sparkles, Key } from "lucide-react";
+import { Brain, Bot, Settings, Home, Sparkles, Key, MessageSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +17,7 @@ const menuItems = [
   { title: "Главная", url: "/", icon: Home },
   { title: "Мои агенты", url: "/my-agents", icon: Brain },
   { title: "Маркетплейс", url: "/marketplace", icon: Bot },
+  { title: "Playground", url: "/playground", icon: MessageSquare },
   { title: "API ключи", url: "/api-keys", icon: Key },
   { title: "Настройки", url: "/settings", icon: Settings },
 ];

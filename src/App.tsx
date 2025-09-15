@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import MyAgents from "./pages/MyAgents";
 import Marketplace from "./pages/Marketplace";
 import ApiKeys from "./pages/ApiKeys";
+import Playground from "./pages/Playground";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/my-agents" element={<MyAgents />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/api-keys" element={<ApiKeys />} />
+          <Route path="/playground" element={<Playground />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

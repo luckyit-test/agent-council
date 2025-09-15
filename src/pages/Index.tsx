@@ -1,4 +1,6 @@
 import { Layout } from "@/components/Layout";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Brain, Bot, Key } from "lucide-react";
 
 const Index = () => {
   return (
@@ -12,7 +14,7 @@ const Index = () => {
           <p className="text-xl text-muted-foreground mb-8">
             Платформа для совместной работы настраиваемых AI-агентов
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 mb-8">
             <div className="px-6 py-3 bg-primary/10 rounded-lg">
               <div className="text-2xl font-bold text-primary">6</div>
               <div className="text-sm text-muted-foreground">Агентов</div>
@@ -26,28 +28,51 @@ const Index = () => {
               <div className="text-sm text-muted-foreground">Выполнено</div>
             </div>
           </div>
+          
+          <div className="flex justify-center gap-3">
+            <Button onClick={() => window.location.href = '/playground'} size="lg">
+              <MessageSquare className="w-5 h-5 mr-2" />
+              Открыть Playground
+            </Button>
+            <Button variant="outline" onClick={() => window.location.href = '/my-agents'} size="lg">
+              <Brain className="w-5 h-5 mr-2" />
+              Мои агенты
+            </Button>
+          </div>
         </div>
 
         {/* Quick Start */}
         <div className="bg-card border rounded-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Быстрый старт</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-              <h3 className="font-semibold mb-2">1. Создайте агента</h3>
+            <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" 
+                 onClick={() => window.location.href = '/playground'}>
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                1. Общение с агентами
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Настройте собственного AI-агента с уникальным промптом
+                Протестируйте своих агентов в Playground
               </p>
             </div>
-            <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-              <h3 className="font-semibold mb-2">2. Создайте задачу</h3>
+            <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                 onClick={() => window.location.href = '/my-agents'}>
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <Brain className="w-4 h-4" />
+                2. Управление агентами
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Опишите задачу и выберите агентов для её решения
+                Создавайте и настраивайте своих AI-агентов
               </p>
             </div>
-            <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-              <h3 className="font-semibold mb-2">3. Наблюдайте</h3>
+            <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                 onClick={() => window.location.href = '/api-keys'}>
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                3. Настройка API
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Следите за процессом решения и вмешивайтесь при необходимости
+                Подключите нейросети через API ключи
               </p>
             </div>
           </div>

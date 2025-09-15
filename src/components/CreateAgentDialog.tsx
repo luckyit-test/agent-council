@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Brain, Lightbulb, Code, Gavel, Search } from "lucide-react";
+import { UserPlus, Brain, Lightbulb, Code, Gavel, Search, Zap, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createCustomAgent } from "@/utils/agentStorage";
 
@@ -22,16 +22,50 @@ const agentTypes = [
   { value: "researcher", label: "Исследователь", icon: Search, description: "Поиск и анализ информации" }
 ];
 
+const aiProviders = [
+  { 
+    value: "openai", 
+    label: "OpenAI", 
+    icon: Zap,
+    models: [
+      { value: "gpt-4o", label: "GPT-4o" },
+      { value: "gpt-4", label: "GPT-4" },
+      { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" }
+    ]
+  },
+  { 
+    value: "anthropic", 
+    label: "Anthropic", 
+    icon: Shield,
+    models: [
+      { value: "claude-3-5-sonnet", label: "Claude 3.5 Sonnet" },
+      { value: "claude-3-opus", label: "Claude 3 Opus" },
+      { value: "claude-3-haiku", label: "Claude 3 Haiku" }
+    ]
+  },
+  { 
+    value: "google", 
+    label: "Google AI", 
+    icon: Brain,
+    models: [
+      { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+      { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" }
+    ]
+  }
+];
+
 export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {}) => {
   const [open, setOpen] = useState(false);
   const [agentName, setAgentName] = useState("");
   const [agentType, setAgentType] = useState("");
   const [agentDescription, setAgentDescription] = useState("");
   const [agentPrompt, setAgentPrompt] = useState("");
+  const [aiProvider, setAiProvider] = useState("");
+  const [aiModel, setAiModel] = useState("");
   const { toast } = useToast();
 
   const handleCreateAgent = () => {
-    if (!agentName || !agentType || !agentDescription || !agentPrompt) {
+    if (!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || !aiModel) {
       toast({
         title: "Ошибка",
         description: "Пожалуйста, заполните все поля",
@@ -53,7 +87,9 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
       name: agentName,
       type: agentType,
       description: agentDescription,
-      prompt: agentPrompt
+      prompt: agentPrompt,
+      aiProvider,
+      aiModel
     });
 
     if (success) {
@@ -68,6 +104,8 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
       setAgentType("");
       setAgentDescription("");
       setAgentPrompt("");
+      setAiProvider("");
+      setAiModel("");
       
       // Notify parent component
       onAgentCreated?.();
@@ -81,6 +119,8 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   };
 
   const selectedType = agentTypes.find(type => type.value === agentType);
+  const selectedProvider = aiProviders.find(provider => provider.value === aiProvider);
+  const availableModels = selectedProvider?.models || [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -173,6 +213,65 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                 </span>
               </div>
             </div>
+
+            {/* AI Provider Selection */}
+            <div>
+              <Label htmlFor="ai-provider">Нейросеть</Label>
+              <Select value={aiProvider} onValueChange={(value) => {
+                setAiProvider(value);
+                setAiModel(""); // Reset model when provider changes
+              }}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Выберите нейросеть" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiProviders.map((provider) => {
+                    const Icon = provider.icon;
+                    return (
+                      <SelectItem key={provider.value} value={provider.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-4 h-4" />
+                          <span>{provider.label}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* AI Model Selection */}
+            {selectedProvider && (
+              <div>
+                <Label htmlFor="ai-model">Модель</Label>
+                <Select value={aiModel} onValueChange={setAiModel}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Выберите модель" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableModels.map((model) => (
+                      <SelectItem key={model.value} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <selectedProvider.icon className="w-4 h-4" />
+                    <Badge variant="outline">{selectedProvider.label}</Badge>
+                    {aiModel && (
+                      <Badge variant="secondary" className="text-xs">
+                        {availableModels.find(m => m.value === aiModel)?.label}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Агент будет использовать выбранную модель для генерации ответов
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Actions */}
@@ -182,7 +281,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
             </Button>
             <Button 
               onClick={handleCreateAgent}
-              disabled={!agentName || !agentType || !agentDescription || !agentPrompt || agentPrompt.length < 10}
+              disabled={!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || !aiModel || agentPrompt.length < 10}
               className="bg-gradient-ai border-0"
             >
               Создать агента

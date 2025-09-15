@@ -13,6 +13,8 @@ export interface UserAgent {
   addedAt: string;
   rating?: number;
   usageCount?: number;
+  aiProvider?: string; // openai, anthropic, google, etc.
+  aiModel?: string; // specific model like gpt-4, claude-3-sonnet, etc.
 }
 
 const USER_AGENTS_KEY = 'userAgents';
