@@ -15,8 +15,8 @@ import {
 
 const menuItems = [
   { title: "Главная", url: "/", icon: Home },
-  { title: "Агенты", url: "/agents", icon: Brain },
-  { title: "Боты", url: "/bots", icon: Bot },
+  { title: "Мои агенты", url: "/my-agents", icon: Brain },
+  { title: "Маркетплейс", url: "/marketplace", icon: Bot },
   { title: "Настройки", url: "/settings", icon: Settings },
 ];
 

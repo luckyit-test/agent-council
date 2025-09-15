@@ -19,10 +19,12 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean | null
+          is_published: boolean | null
           max_tokens: number | null
           model: string
           name: string
           personality: string | null
+          published_at: string | null
           role: string
           system_prompt: string
           temperature: number | null
@@ -33,10 +35,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          is_published?: boolean | null
           max_tokens?: number | null
           model?: string
           name: string
           personality?: string | null
+          published_at?: string | null
           role: string
           system_prompt: string
           temperature?: number | null
@@ -47,10 +51,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          is_published?: boolean | null
           max_tokens?: number | null
           model?: string
           name?: string
           personality?: string | null
+          published_at?: string | null
           role?: string
           system_prompt?: string
           temperature?: number | null

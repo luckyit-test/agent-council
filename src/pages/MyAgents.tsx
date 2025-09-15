@@ -74,9 +74,8 @@ const mockAgents = [
   }
 ];
 
-const Agents = () => {
+const MyAgents = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewFilter, setViewFilter] = useState<"all" | "my" | "marketplace">("all");
   const [selectedAgent, setSelectedAgent] = useState<typeof mockAgents[0] | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
@@ -84,12 +83,10 @@ const Agents = () => {
     return mockAgents.filter(agent => {
       const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            agent.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesView = viewFilter === "all" || 
-                         (viewFilter === "my" && agent.isCustom) ||
-                         (viewFilter === "marketplace" && !agent.isCustom);
-      return matchesSearch && matchesView;
+      // Показываем только пользовательские агенты (isCustom: true)
+      return matchesSearch && agent.isCustom;
     });
-  }, [searchQuery, viewFilter]);
+  }, [searchQuery]);
 
   const handleAgentSelect = (agentId: string) => {
     const agent = mockAgents.find(a => a.id === agentId);
@@ -112,52 +109,21 @@ const Agents = () => {
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">Агенты</h1>
+          <h1 className="text-4xl font-bold">Мои агенты</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Выберите агента для выполнения задачи или создайте собственного
+            Ваши персональные агенты и добавленные из маркетплейса
           </p>
         </div>
 
-        {/* Search and View Toggle */}
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input
-              placeholder="Поиск агентов..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 text-base"
-            />
-          </div>
-          
-          <div className="flex justify-center">
-            <div className="flex bg-muted p-1 rounded-lg">
-              <Button
-                variant={viewFilter === "all" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewFilter("all")}
-                className="min-w-[100px]"
-              >
-                Все ({mockAgents.length})
-              </Button>
-              <Button
-                variant={viewFilter === "my" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewFilter("my")}
-                className="min-w-[100px]"
-              >
-                Мои ({mockAgents.filter(a => a.isCustom).length})
-              </Button>
-              <Button
-                variant={viewFilter === "marketplace" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewFilter("marketplace")}
-                className="min-w-[100px]"
-              >
-                Маркетплейс ({mockAgents.filter(a => !a.isCustom).length})
-              </Button>
-            </div>
-          </div>
+        {/* Search */}
+        <div className="relative max-w-md mx-auto">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+          <Input
+            placeholder="Поиск ваших агентов..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-12 h-12 text-base"
+          />
         </div>
 
         {/* Agents List */}
@@ -220,4 +186,4 @@ const Agents = () => {
   );
 };
 
-export default Agents;
+export default MyAgents;
