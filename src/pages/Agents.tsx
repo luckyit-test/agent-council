@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { Layout } from "@/components/Layout";
-import { AgentFilters } from "@/components/AgentFilters";
-import { AgentSection } from "@/components/AgentSection";
+import { AgentCard } from "@/components/AgentCard";
 import { CreateAgentDialog } from "@/components/CreateAgentDialog";
 import { AgentDetailDialog } from "@/components/AgentDetailDialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Users, Zap, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Users } from "lucide-react";
 
 const mockAgents = [
   {
@@ -76,46 +76,20 @@ const mockAgents = [
 
 const Agents = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("popular");
   const [viewFilter, setViewFilter] = useState<"all" | "my" | "marketplace">("all");
   const [selectedAgent, setSelectedAgent] = useState<typeof mockAgents[0] | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
-  const filteredAndSortedAgents = useMemo(() => {
-    let filtered = mockAgents.filter(agent => {
+  const filteredAgents = useMemo(() => {
+    return mockAgents.filter(agent => {
       const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            agent.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = typeFilter === "all" || agent.type === typeFilter;
       const matchesView = viewFilter === "all" || 
                          (viewFilter === "my" && agent.isCustom) ||
                          (viewFilter === "marketplace" && !agent.isCustom);
-      return matchesSearch && matchesType && matchesView;
+      return matchesSearch && matchesView;
     });
-
-    // Sort agents
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "popular":
-          return b.usageCount - a.usageCount;
-        case "rating":
-          return b.rating - a.rating;
-        case "recent":
-          return a.id.localeCompare(b.id); // Simple recent sorting
-        default:
-          return 0;
-      }
-    });
-
-    return filtered;
-  }, [searchQuery, typeFilter, sortBy, viewFilter]);
-
-  const myAgents = filteredAndSortedAgents.filter(agent => agent.isCustom);
-  const marketplaceAgents = filteredAndSortedAgents.filter(agent => !agent.isCustom);
-
-  const totalAgents = mockAgents.length;
-  const myAgentsCount = mockAgents.filter(agent => agent.isCustom).length;
-  const activeAgents = 4; // This could be dynamic based on actual usage
+  }, [searchQuery, viewFilter]);
 
   const handleAgentSelect = (agentId: string) => {
     const agent = mockAgents.find(a => a.id === agentId);
@@ -125,142 +99,112 @@ const Agents = () => {
     }
   };
 
+  const handleAgentRun = (agentId: string) => {
+    // Handle agent run logic
+    console.log("Running agent:", agentId);
+  };
+
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Агенты</h1>
-            <p className="text-muted-foreground">
-              Управляйте своими AI-агентами и выбирайте из маркетплейса
-            </p>
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold">Агенты</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Выберите агента для выполнения задачи или создайте собственного
+          </p>
+        </div>
+
+        {/* Search and View Toggle */}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input
+              placeholder="Поиск агентов..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 h-12 text-base"
+            />
           </div>
-          <CreateAgentDialog />
+          
+          <div className="flex justify-center">
+            <div className="flex bg-muted p-1 rounded-lg">
+              <Button
+                variant={viewFilter === "all" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewFilter("all")}
+                className="min-w-[100px]"
+              >
+                Все ({mockAgents.length})
+              </Button>
+              <Button
+                variant={viewFilter === "my" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewFilter("my")}
+                className="min-w-[100px]"
+              >
+                Мои ({mockAgents.filter(a => a.isCustom).length})
+              </Button>
+              <Button
+                variant={viewFilter === "marketplace" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewFilter("marketplace")}
+                className="min-w-[100px]"
+              >
+                Маркетплейс ({mockAgents.filter(a => !a.isCustom).length})
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Enhanced Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Всего агентов</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalAgents}</div>
-              <div className="flex items-center text-xs text-muted-foreground mt-1">
-                <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
-                +2 за неделю
+        {/* Agents List */}
+        {filteredAgents.length > 0 ? (
+          <div className="space-y-4">
+            {filteredAgents.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                {...agent}
+                onSelect={handleAgentSelect}
+                onRun={handleAgentRun}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <Users className="w-8 h-8 text-muted-foreground" />
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Мои агенты</CardTitle>
-              <Plus className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{myAgentsCount}</div>
-              <p className="text-xs text-muted-foreground mt-1">Создано вами</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Активных</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeAgents}</div>
-              <p className="text-xs text-muted-foreground mt-1">Используются в задачах</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Популярность</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {Math.round(mockAgents.reduce((acc, agent) => acc + agent.rating, 0) / mockAgents.length * 10) / 10}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Средний рейтинг</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Enhanced Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Поиск и фильтры</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AgentFilters
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              typeFilter={typeFilter}
-              onTypeFilterChange={setTypeFilter}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              viewFilter={viewFilter}
-              onViewFilterChange={setViewFilter}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Agents Sections */}
-        <div className="space-y-8">
-          {(viewFilter === "all" || viewFilter === "my") && (
-            <AgentSection
-              title="Мои агенты"
-              subtitle="Агенты, созданные и настроенные вами"
-              agents={myAgents}
-              onAgentSelect={handleAgentSelect}
-              defaultExpanded={viewFilter === "my"}
-              emptyMessage="У вас пока нет собственных агентов"
-            />
-          )}
-
-          {(viewFilter === "all" || viewFilter === "marketplace") && (
-            <AgentSection
-              title="Маркетплейс агентов"
-              subtitle="Готовые к использованию профессиональные агенты"
-              agents={marketplaceAgents}
-              onAgentSelect={handleAgentSelect}
-              defaultExpanded={viewFilter === "marketplace"}
-              emptyMessage="Агенты из маркетплейса не найдены"
-            />
-          )}
-
-          {filteredAndSortedAgents.length === 0 && (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <Users className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Агенты не найдены</h3>
-                <p className="text-muted-foreground mb-4 max-w-md">
-                  Попробуйте изменить критерии поиска или создать собственного агента для решения ваших задач
-                </p>
-                <div className="flex gap-2">
+              <h3 className="text-xl font-semibold mb-2">
+                {searchQuery ? "Агенты не найдены" : "Нет агентов"}
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                {searchQuery 
+                  ? "Попробуйте изменить поисковый запрос или выбрать другую категорию"
+                  : "Создайте своего первого агента или выберите из маркетплейса"
+                }
+              </p>
+              <div className="flex gap-3">
+                {searchQuery && (
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      setSearchQuery("");
-                      setTypeFilter("all");
-                      setViewFilter("all");
-                    }}
+                    onClick={() => setSearchQuery("")}
                   >
-                    Сбросить фильтры
+                    Очистить поиск
                   </Button>
-                  <CreateAgentDialog />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                )}
+                <CreateAgentDialog />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Create Agent CTA */}
+        {filteredAgents.length > 0 && (
+          <div className="text-center pt-8">
+            <CreateAgentDialog />
+          </div>
+        )}
 
         {/* Agent Detail Dialog */}
         <AgentDetailDialog
