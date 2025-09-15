@@ -99,9 +99,12 @@ const Agents = () => {
     }
   };
 
-  const handleAgentRun = (agentId: string) => {
-    // Handle agent run logic
-    console.log("Running agent:", agentId);
+  const handleAgentEdit = (agentId: string) => {
+    const agent = mockAgents.find(a => a.id === agentId);
+    if (agent) {
+      setSelectedAgent(agent);
+      setDetailDialogOpen(true);
+    }
   };
 
   return (
@@ -165,7 +168,7 @@ const Agents = () => {
                 key={agent.id}
                 {...agent}
                 onSelect={handleAgentSelect}
-                onRun={handleAgentRun}
+                onEdit={handleAgentEdit}
               />
             ))}
           </div>

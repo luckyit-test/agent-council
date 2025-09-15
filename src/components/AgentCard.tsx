@@ -9,7 +9,7 @@ import {
   Search,
   User,
   Store,
-  Play
+  Edit
 } from "lucide-react";
 
 interface AgentCardProps {
@@ -23,7 +23,7 @@ interface AgentCardProps {
   isCustom: boolean;
   isSelected?: boolean;
   onSelect?: (id: string) => void;
-  onRun?: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
 const getAgentIcon = (type: string) => {
@@ -66,7 +66,7 @@ export const AgentCard = ({
   description,
   isCustom,
   onSelect,
-  onRun
+  onEdit
 }: AgentCardProps) => {
   return (
     <Card 
@@ -81,11 +81,19 @@ export const AgentCard = ({
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <CardTitle className="text-lg truncate">{name}</CardTitle>
+              <CardTitle className="text-lg mb-3">{name}</CardTitle>
+              
+              <div className="flex items-center gap-2 mb-3">
+                <Badge variant="outline" className="text-xs">
+                  {getAgentTypeName(type)}
+                </Badge>
                 <Badge 
                   variant={isCustom ? "default" : "secondary"} 
-                  className="text-xs flex items-center gap-1 shrink-0"
+                  className={`text-xs flex items-center gap-1 ${
+                    isCustom 
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" 
+                      : "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  }`}
                 >
                   {isCustom ? (
                     <>
@@ -101,10 +109,6 @@ export const AgentCard = ({
                 </Badge>
               </div>
               
-              <Badge variant="outline" className="text-xs mb-3">
-                {getAgentTypeName(type)}
-              </Badge>
-              
               <CardDescription className="text-sm leading-relaxed">
                 {description}
               </CardDescription>
@@ -114,13 +118,13 @@ export const AgentCard = ({
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              onRun?.(id);
+              onEdit?.(id);
             }}
-            className="shrink-0"
-            size="sm"
+            variant="ghost"
+            size="icon"
+            className="shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
           >
-            <Play className="w-4 h-4 mr-2" />
-            Запустить
+            <Edit className="w-5 h-5" />
           </Button>
         </div>
       </CardHeader>
