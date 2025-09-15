@@ -12,7 +12,8 @@ export const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen flex w-full bg-background">
       <AppSidebar />
       
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content takes full width, sidebar is floating */}
+      <div className="flex-1 flex flex-col w-full">
         {/* Header */}
         <header className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/30">
           <div className="container mx-auto px-4 py-4">

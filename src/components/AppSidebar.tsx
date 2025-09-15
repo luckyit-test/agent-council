@@ -30,7 +30,7 @@ export function AppSidebar() {
   const handleMouseLeave = () => {
     const timeout = setTimeout(() => {
       setIsCollapsed(true);
-    }, 300); // Small delay before collapsing
+    }, 500); // Больше времени для комфорта
     setHoverTimeout(timeout);
   };
 
@@ -45,18 +45,20 @@ export function AppSidebar() {
 
   return (
     <aside 
-      className={`${isCollapsed ? "w-16" : "w-64"} transition-all duration-300 bg-card/50 backdrop-blur border-r border-border/50 flex flex-col`} 
+      className={`fixed left-0 top-0 h-full z-50 transition-all duration-500 ease-in-out ${
+        isCollapsed ? "w-16" : "w-64"
+      } bg-card/95 backdrop-blur-lg border-r border-border/50 shadow-2xl`} 
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Header */}
-      <div className="px-4 py-6 border-b border-border/50">
+      <div className="px-4 py-6 border-b border-border/30">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-ai rounded-lg flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 bg-gradient-ai rounded-lg flex items-center justify-center shrink-0 shadow-lg">
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
           {!isCollapsed && (
-            <div className="animate-fade-in">
+            <div className="animate-fade-in opacity-0 animate-delay-150" style={{ animation: 'fade-in 0.3s ease-out 0.2s forwards' }}>
               <h2 className="font-bold text-lg">AI Platform</h2>
               <p className="text-xs text-muted-foreground">Агенты & Боты</p>
             </div>
@@ -65,10 +67,10 @@ export function AppSidebar() {
       </div>
 
       {/* Navigation */}
-      <div className="px-2 py-4 flex-1">
+      <div className="px-2 py-4 flex-1 overflow-hidden">
         <div>
           {!isCollapsed && (
-            <div className="px-3 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="px-3 mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider opacity-0 animate-fade-in" style={{ animation: 'fade-in 0.3s ease-out 0.3s forwards' }}>
               Навигация
             </div>
           )}
@@ -82,21 +84,24 @@ export function AppSidebar() {
                   to={item.url}
                   end
                   className={`
-                    relative group hover-scale transition-all duration-200 flex items-center gap-3 w-full px-3 py-2 rounded-lg
+                    relative group transition-all duration-300 ease-out flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:shadow-md
                     ${isActive 
-                      ? "bg-primary/15 text-primary border-r-2 border-primary shadow-lg" 
-                      : "hover:bg-muted/70 hover:text-foreground"
+                      ? "bg-primary/15 text-primary shadow-lg scale-105" 
+                      : "hover:bg-muted/70 hover:text-foreground hover:scale-102"
                     }
                     ${isCollapsed ? "justify-center" : "justify-start"}
                   `}
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                  style={{ 
+                    animationDelay: `${index * 0.05}s`,
+                    transform: isCollapsed ? 'scale(1)' : 'scale(1)'
+                  }}
                 >
-                  <item.icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-primary' : ''}`} />
+                  <item.icon className={`h-5 w-5 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
                   {!isCollapsed && (
-                    <span className="font-medium animate-fade-in">{item.title}</span>
+                    <span className="font-medium transition-all duration-300 opacity-0 animate-fade-in" style={{ animation: 'fade-in 0.3s ease-out 0.4s forwards' }}>{item.title}</span>
                   )}
                   {isActive && !isCollapsed && (
-                    <div className="absolute right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                    <div className="absolute right-2 w-2 h-2 bg-primary rounded-full animate-pulse shadow-lg" />
                   )}
                 </NavLink>
               );
