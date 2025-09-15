@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +62,26 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   const [agentPrompt, setAgentPrompt] = useState("");
   const [aiProvider, setAiProvider] = useState("");
   const [aiModel, setAiModel] = useState("");
+  const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Загружаем список настроенных провайдеров
+  useEffect(() => {
+    const savedKeys = localStorage.getItem('ai-api-keys');
+    if (savedKeys) {
+      try {
+        const keys = JSON.parse(savedKeys);
+        const configured = Object.keys(keys).filter(key => keys[key]);
+        // Добавляем perplexity как всегда доступный
+        setConfiguredProviders([...configured, 'perplexity']);
+      } catch (error) {
+        console.error('Error loading API keys:', error);
+        setConfiguredProviders(['perplexity']);
+      }
+    } else {
+      setConfiguredProviders(['perplexity']);
+    }
+  }, [open]);
 
   const handleCreateAgent = () => {
     if (!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || !aiModel) {
@@ -119,7 +138,8 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   };
 
   const selectedType = agentTypes.find(type => type.value === agentType);
-  const selectedProvider = aiProviders.find(provider => provider.value === aiProvider);
+  const availableProviders = aiProviders.filter(provider => configuredProviders.includes(provider.value));
+  const selectedProvider = availableProviders.find(provider => provider.value === aiProvider);
   const availableModels = selectedProvider?.models || [];
 
   return (
@@ -184,37 +204,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
               )}
             </div>
             
-            <div>
-              <Label htmlFor="agent-description">Описание</Label>
-              <Textarea
-                id="agent-description"
-                value={agentDescription}
-                onChange={(e) => setAgentDescription(e.target.value)}
-                placeholder="Опишите, что умеет ваш агент и для каких задач он предназначен..."
-                className="mt-1 min-h-20"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="agent-prompt">Системный промпт</Label>
-              <Textarea
-                id="agent-prompt"
-                value={agentPrompt}
-                onChange={(e) => setAgentPrompt(e.target.value)}
-                placeholder="Введите системный промпт, который определяет поведение и роль вашего агента..."
-                className="mt-1 min-h-32 font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Промпт определяет как агент будет вести себя и отвечать на запросы (минимум 10 символов)
-              </p>
-              <div className="text-right">
-                <span className="text-xs text-muted-foreground">
-                  {agentPrompt.length} символов
-                </span>
-              </div>
-            </div>
-
-            {/* AI Provider Selection */}
+            {/* AI Provider Selection - перемещено под тип агента */}
             <div>
               <Label htmlFor="ai-provider">Нейросеть</Label>
               <Select value={aiProvider} onValueChange={(value) => {
@@ -225,19 +215,30 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                   <SelectValue placeholder="Выберите нейросеть" />
                 </SelectTrigger>
                 <SelectContent>
-                  {aiProviders.map((provider) => {
-                    const Icon = provider.icon;
-                    return (
-                      <SelectItem key={provider.value} value={provider.value}>
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4" />
-                          <span>{provider.label}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
+                  {availableProviders.length > 0 ? (
+                    availableProviders.map((provider) => {
+                      const Icon = provider.icon;
+                      return (
+                        <SelectItem key={provider.value} value={provider.value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4" />
+                            <span>{provider.label}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })
+                  ) : (
+                    <div className="p-3 text-sm text-muted-foreground text-center">
+                      Настройте API-ключи в разделе "API Ключи"
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
+              {availableProviders.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Нет настроенных нейросетей. Перейдите в раздел "API Ключи" для настройки.
+                </p>
+              )}
             </div>
 
             {/* AI Model Selection */}
@@ -272,6 +273,36 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                 </div>
               </div>
             )}
+            
+            <div>
+              <Label htmlFor="agent-description">Описание</Label>
+              <Textarea
+                id="agent-description"
+                value={agentDescription}
+                onChange={(e) => setAgentDescription(e.target.value)}
+                placeholder="Опишите, что умеет ваш агент и для каких задач он предназначен..."
+                className="mt-1 min-h-20"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="agent-prompt">Системный промпт</Label>
+              <Textarea
+                id="agent-prompt"
+                value={agentPrompt}
+                onChange={(e) => setAgentPrompt(e.target.value)}
+                placeholder="Введите системный промпт, который определяет поведение и роль вашего агента..."
+                className="mt-1 min-h-32 font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Промпт определяет как агент будет вести себя и отвечать на запросы (минимум 10 символов)
+              </p>
+              <div className="text-right">
+                <span className="text-xs text-muted-foreground">
+                  {agentPrompt.length} символов
+                </span>
+              </div>
+            </div>
           </div>
           
           {/* Actions */}
@@ -281,7 +312,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
             </Button>
             <Button 
               onClick={handleCreateAgent}
-              disabled={!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || !aiModel || agentPrompt.length < 10}
+              disabled={!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || !aiModel || agentPrompt.length < 10 || availableProviders.length === 0}
               className="bg-gradient-ai border-0"
             >
               Создать агента
