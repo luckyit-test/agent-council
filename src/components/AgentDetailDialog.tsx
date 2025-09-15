@@ -361,25 +361,12 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
           )}
 
           {/* Stats (только если есть) */}
-          {(agent?.rating || agent?.usageCount) && (
+          {agent?.usageCount && (
             <>
               <Separator />
-              <div className="grid grid-cols-2 gap-4">
-                {agent.rating && (
-                  <div className="text-center p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-2xl font-bold">{agent.rating}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Рейтинг</p>
-                  </div>
-                )}
-                {agent.usageCount && (
-                  <div className="text-center p-4 bg-muted/30 rounded-lg">
-                    <div className="text-2xl font-bold mb-1">{agent.usageCount}</div>
-                    <p className="text-sm text-muted-foreground">Использований</p>
-                  </div>
-                )}
+              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold mb-1">{agent.usageCount}</div>
+                <p className="text-sm text-muted-foreground">Использований</p>
               </div>
             </>
           )}
