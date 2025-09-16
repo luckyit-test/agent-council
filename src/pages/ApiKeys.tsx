@@ -56,26 +56,6 @@ const API_PROVIDERS: ApiProvider[] = [
     status: 'not-configured'
   },
   {
-    id: 'anthropic',
-    name: 'Anthropic',
-    description: 'Claude 3.5 Sonnet, Claude 3 Opus',
-    icon: <Shield className="w-5 h-5" />,
-    website: 'https://console.anthropic.com/keys',
-    models: ['claude-3-5-sonnet', 'claude-3-opus', 'claude-3-haiku'],
-    testEndpoint: '/api/test-anthropic',
-    status: 'not-configured'
-  },
-  {
-    id: 'google',
-    name: 'Google AI',
-    description: 'Gemini Pro, Gemini Vision',
-    icon: <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-red-500 rounded" />,
-    website: 'https://aistudio.google.com/app/apikey',
-    models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision'],
-    testEndpoint: '/api/test-google',
-    status: 'not-configured'
-  },
-  {
     id: 'perplexity',
     name: 'Perplexity',
     description: 'Llama 3.1 Sonar, поиск в реальном времени',
@@ -83,26 +63,16 @@ const API_PROVIDERS: ApiProvider[] = [
     website: 'https://www.perplexity.ai/settings/api',
     models: ['llama-3.1-sonar-large', 'llama-3.1-sonar-small'],
     testEndpoint: '/api/test-perplexity',
-    status: 'configured' // уже есть в Supabase secrets
+    status: 'configured'
   },
   {
-    id: 'mistral',
-    name: 'Mistral AI',
-    description: 'Mistral Large, Mixtral 8x7B',
-    icon: <div className="w-5 h-5 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold">M</div>,
-    website: 'https://console.mistral.ai/api-keys/',
-    models: ['mistral-large', 'mixtral-8x7b', 'mistral-medium'],
-    testEndpoint: '/api/test-mistral',
-    status: 'not-configured'
-  },
-  {
-    id: 'huggingface',
-    name: 'Hugging Face',
-    description: 'Доступ к тысячам open-source моделей',
-    icon: <div className="w-5 h-5 bg-yellow-500 rounded flex items-center justify-center text-white text-xs font-bold">🤗</div>,
-    website: 'https://huggingface.co/settings/tokens',
-    models: ['mixtral-8x7b', 'llama-2-70b', 'code-llama'],
-    testEndpoint: '/api/test-huggingface',
+    id: 'deepseek',
+    name: 'Deepseek',
+    description: 'Deepseek V3, высокопроизводительная модель',
+    icon: <div className="w-5 h-5 bg-indigo-600 rounded flex items-center justify-center text-white text-xs font-bold">D</div>,
+    website: 'https://platform.deepseek.com/api_keys',
+    models: ['deepseek-chat', 'deepseek-coder', 'deepseek-math'],
+    testEndpoint: '/api/test-deepseek',
     status: 'not-configured'
   }
 ];
@@ -118,77 +88,31 @@ const ApiKeys = () => {
   });
   const { toast } = useToast();
 
-  // Загрузка сохранённых ключей из localStorage
+  // Инициализация статусов провайдеров
   useEffect(() => {
-    const savedKeys = localStorage.getItem('ai-api-keys');
-    if (savedKeys) {
-      try {
-        const keys = JSON.parse(savedKeys);
-        setApiKeys(keys);
-        
-        // Обновляем статусы провайдеров
-        setProviders(prev => prev.map(provider => ({
-          ...provider,
-          status: keys[provider.id] ? 'configured' : 
-                  provider.id === 'perplexity' ? 'configured' : 'not-configured'
-        })));
-      } catch (error) {
-        console.error('Error loading API keys:', error);
-      }
-    }
+    // Перплексити уже настроен в Supabase
+    setProviders(prev => prev.map(provider => ({
+      ...provider,
+      status: provider.id === 'perplexity' ? 'configured' : 'not-configured'
+    })));
   }, []);
 
-  const saveApiKey = (providerId: string, key: string) => {
-    const updatedKeys = { ...apiKeys, [providerId]: key };
-    setApiKeys(updatedKeys);
-    localStorage.setItem('ai-api-keys', JSON.stringify(updatedKeys));
-    
-    // Обновляем статус провайдера
-    setProviders(prev => prev.map(provider => 
-      provider.id === providerId 
-        ? { ...provider, status: key ? 'configured' : 'not-configured' }
-        : provider
-    ));
-
-    toast({
-      title: "API ключ сохранён",
-      description: `Ключ для ${providers.find(p => p.id === providerId)?.name} успешно сохранён`
-    });
-  };
-
-  const deleteApiKey = (providerId: string) => {
-    const updatedKeys = { ...apiKeys };
-    delete updatedKeys[providerId];
-    setApiKeys(updatedKeys);
-    localStorage.setItem('ai-api-keys', JSON.stringify(updatedKeys));
-    
-    // Обновляем статус провайдера
-    setProviders(prev => prev.map(provider => 
-      provider.id === providerId 
-        ? { ...provider, status: 'not-configured' }
-        : provider
-    ));
-
-    toast({
-      title: "API ключ удалён",
-      description: `Ключ для ${providers.find(p => p.id === providerId)?.name} удалён`
-    });
-  };
-
-  const updatePerplexityKey = async (providerId: string, key: string) => {
+  const saveApiKey = async (providerId: string, key: string) => {
     if (!key.trim()) {
       toast({
         title: "Ошибка",
-        description: "Введите API ключ для обновления",
+        description: "Введите API ключ для сохранения",
         variant: "destructive"
       });
       return;
     }
 
     try {
+      // Сохраняем ключ в Supabase secrets
+      const secretName = `${providerId.toUpperCase()}_API_KEY`;
       const { data, error } = await supabase.functions.invoke('update-secret', {
         body: {
-          secretName: 'PERPLEXITY_API_KEY',
+          secretName,
           secretValue: key.trim()
         }
       });
@@ -197,22 +121,66 @@ const ApiKeys = () => {
         throw error;
       }
       
-      // Очищаем поле после успешного обновления
+      // Обновляем статус провайдера
+      setProviders(prev => prev.map(provider => 
+        provider.id === providerId 
+          ? { ...provider, status: 'configured' }
+          : provider
+      ));
+
+      // Очищаем поле ввода
       setApiKeys(prev => ({ ...prev, [providerId]: "" }));
-      
+
       toast({
-        title: "Ключ обновлён",
-        description: "Новый ключ Perplexity сохранён в Supabase. Протестируйте подключение.",
+        title: "API ключ сохранён",
+        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} сохранён в Supabase`
       });
     } catch (error) {
-      console.error('Update key error:', error);
+      console.error('Save key error:', error);
       toast({
-        title: "Ошибка обновления",
-        description: "Не удалось обновить ключ в Supabase",
+        title: "Ошибка сохранения",
+        description: "Не удалось сохранить ключ в Supabase",
         variant: "destructive"
       });
     }
   };
+
+  const deleteApiKey = async (providerId: string) => {
+    try {
+      // Удаляем ключ из Supabase secrets (устанавливаем пустое значение)
+      const secretName = `${providerId.toUpperCase()}_API_KEY`;
+      const { data, error } = await supabase.functions.invoke('update-secret', {
+        body: {
+          secretName,
+          secretValue: ''
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      // Обновляем статус провайдера
+      setProviders(prev => prev.map(provider => 
+        provider.id === providerId 
+          ? { ...provider, status: 'not-configured' }
+          : provider
+      ));
+
+      toast({
+        title: "API ключ удалён",
+        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} удалён`
+      });
+    } catch (error) {
+      console.error('Delete key error:', error);
+      toast({
+        title: "Ошибка удаления",
+        description: "Не удалось удалить ключ из Supabase",
+        variant: "destructive"
+      });
+    }
+  };
+
 
   const testConnection = async (providerId: string) => {
     const provider = providers.find(p => p.id === providerId);
@@ -236,29 +204,7 @@ const ApiKeys = () => {
       // Выполняем реальный тест API через edge функцию
       let testResult;
       
-      if (providerId === 'perplexity') {
-        // Тестируем Perplexity через chat-with-ai функцию
-        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
-          body: {
-            messages: [{ role: 'user', content: 'Hello' }],
-            provider: 'perplexity',
-            model: 'sonar-deep-research',
-            stream: false,
-            testMode: true
-          }
-        });
-        
-        testResult = !error && data && !data.error;
-        if (error || (data && data.error)) {
-          console.error('Perplexity test error:', error || data.error);
-          // Показываем подробную ошибку пользователю
-          toast({
-            title: "Ошибка тестирования Perplexity",
-            description: error?.message || data?.error || "Неизвестная ошибка API",
-            variant: "destructive"
-          });
-        }
-      } else if (providerId === 'openai') {
+      if (providerId === 'openai') {
         // Тестируем OpenAI через chat-with-ai функцию
         const { data, error } = await supabase.functions.invoke('chat-with-ai', {
           body: {
@@ -274,9 +220,43 @@ const ApiKeys = () => {
         if (error || (data && data.error)) {
           console.error('OpenAI test error:', error || data.error);
         }
-      } else {
-        // Для других провайдеров пока оставляем базовую проверку
-        testResult = apiKey && apiKey.length > 10;
+      } else if (providerId === 'perplexity') {
+        // Тестируем Perplexity через chat-with-ai функцию
+        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+          body: {
+            messages: [{ role: 'user', content: 'Hello' }],
+            provider: 'perplexity',
+            model: 'sonar-deep-research',
+            stream: false,
+            testMode: true
+          }
+        });
+        
+        testResult = !error && data && !data.error;
+        if (error || (data && data.error)) {
+          console.error('Perplexity test error:', error || data.error);
+          toast({
+            title: "Ошибка тестирования Perplexity",
+            description: error?.message || data?.error || "Неизвестная ошибка API",
+            variant: "destructive"
+          });
+        }
+      } else if (providerId === 'deepseek') {
+        // Тестируем Deepseek через chat-with-ai функцию
+        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+          body: {
+            messages: [{ role: 'user', content: 'Hello' }],
+            provider: 'deepseek',
+            model: 'deepseek-chat',
+            stream: false,
+            testMode: true
+          }
+        });
+        
+        testResult = !error && data && !data.error;
+        if (error || (data && data.error)) {
+          console.error('Deepseek test error:', error || data.error);
+        }
       }
       
       const isValid = testResult;
@@ -442,11 +422,7 @@ const ApiKeys = () => {
                             [provider.id]: e.target.value
                           }));
                         }}
-                        placeholder={
-                          provider.id === 'perplexity' 
-                            ? "Введите новый ключ Perplexity или оставьте пустым для использования сохранённого" 
-                            : "Вставьте ваш API ключ..."
-                        }
+                        placeholder="Введите ваш API ключ..."
                         className="pr-10"
                       />
                       <Button
@@ -469,36 +445,23 @@ const ApiKeys = () => {
                       </Button>
                     </div>
                     
-                    {provider.id === 'perplexity' ? (
+                    <Button
+                      onClick={() => saveApiKey(provider.id, apiKeys[provider.id] || "")}
+                      disabled={!apiKeys[provider.id]}
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Сохранить
+                    </Button>
+                    
+                    {provider.status === 'configured' && (
                       <Button
-                        onClick={() => updatePerplexityKey(provider.id, apiKeys[provider.id] || "")}
-                        disabled={!apiKeys[provider.id]}
+                        variant="outline"
                         size="sm"
+                        onClick={() => setDeleteDialog({ open: true, providerId: provider.id })}
                       >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Обновить в Supabase
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                    ) : (
-                      <>
-                        <Button
-                          onClick={() => saveApiKey(provider.id, apiKeys[provider.id] || "")}
-                          disabled={!apiKeys[provider.id]}
-                          size="sm"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Сохранить
-                        </Button>
-                        
-                        {provider.status === 'configured' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteDialog({ open: true, providerId: provider.id })}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </>
                     )}
                   </div>
                 </div>

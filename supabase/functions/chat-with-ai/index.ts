@@ -24,7 +24,87 @@ serve(async (req) => {
     let response;
     let generatedText;
 
-    if (provider === 'perplexity') {
+    if (provider === 'openai') {
+      const openaiKey = Deno.env.get('OPENAI_API_KEY');
+      
+      if (!openaiKey) {
+        console.log('OpenAI API key not found');
+        return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Calling OpenAI API with model:', model);
+      
+      const openaiMessages = agentPrompt 
+        ? [{ role: 'system', content: agentPrompt }, ...messages]
+        : messages;
+      
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: openaiMessages,
+          stream,
+          max_tokens: 1000,
+          temperature: 0.7,
+        }),
+      });
+
+      if (stream) {
+        return new Response(response.body, {
+          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+        });
+      } else {
+        const data = await response.json();
+        generatedText = data.choices?.[0]?.message?.content || 'No response generated';
+      }
+    } else if (provider === 'deepseek') {
+      const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+      
+      if (!deepseekKey) {
+        console.log('Deepseek API key not found');
+        return new Response(JSON.stringify({ error: 'Deepseek API key not configured' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Calling Deepseek API with model:', model);
+      
+      const deepseekMessages = agentPrompt 
+        ? [{ role: 'system', content: agentPrompt }, ...messages]
+        : messages;
+      
+      response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${deepseekKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: model || 'deepseek-chat',
+          messages: deepseekMessages,
+          stream,
+          max_tokens: 1000,
+          temperature: 0.7,
+        }),
+      });
+
+      if (stream) {
+        return new Response(response.body, {
+          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+        });
+      } else {
+        const data = await response.json();
+        generatedText = data.choices?.[0]?.message?.content || 'No response generated';
+      }
+    } else if (provider === 'perplexity') {
       const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
       
       console.log('=== PERPLEXITY TEST START ===');
