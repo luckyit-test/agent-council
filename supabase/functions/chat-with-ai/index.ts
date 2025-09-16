@@ -225,13 +225,17 @@ serve(async (req) => {
         throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
       }
 
-      if (stream) {
+      if (shouldStream) {
+        console.log('Using streaming mode');
         return new Response(response.body, {
           headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
         });
       } else {
+        console.log('Using non-streaming mode');
         const data = await response.json();
+        console.log('OpenAI response data:', JSON.stringify(data, null, 2));
         generatedText = data.choices?.[0]?.message?.content || 'No response generated';
+        console.log('Generated text:', generatedText);
       }
       
     } else if (provider === 'deepseek') {
