@@ -283,6 +283,7 @@ serve(async (req) => {
         });
       } else {
         const data = await response.json();
+        console.log('Deepseek API response received');
         generatedText = data.choices?.[0]?.message?.content || 'No response generated';
       }
       
@@ -389,6 +390,8 @@ serve(async (req) => {
     }
 
     console.log('AI response generated successfully');
+    console.log('Final generatedText value:', generatedText);
+    console.log('Final generatedText length:', generatedText?.length);
     
     return new Response(JSON.stringify({ generatedText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
