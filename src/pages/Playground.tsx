@@ -217,9 +217,10 @@ const Playground = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            messages: [
-              { role: 'user', content: inputMessage.trim() }
-            ],
+            messages: currentSession.messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
+            })).concat([{ role: 'user', content: inputMessage.trim() }]),
             provider: aiProvider,
             model: aiModel,
             agentPrompt: selectedAgent.prompt,
@@ -323,9 +324,10 @@ const Playground = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            messages: [
-              { role: 'user', content: inputMessage.trim() }
-            ],
+            messages: currentSession.messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
+            })).concat([{ role: 'user', content: inputMessage.trim() }]),
             provider: aiProvider,
             model: aiModel,
             agentPrompt: selectedAgent.prompt,
