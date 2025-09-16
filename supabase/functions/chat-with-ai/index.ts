@@ -27,6 +27,8 @@ serve(async (req) => {
         throw new Error('Perplexity API key not configured');
       }
       console.log('Perplexity API key found, length:', perplexityApiKey.length);
+      console.log('Perplexity API key prefix:', perplexityApiKey.substring(0, 8) + '...');
+      console.log('Testing with URL: https://api.perplexity.ai/chat/completions');
 
       // Build messages array with agent prompt as system message
       const apiMessages = [];
