@@ -15,7 +15,11 @@ serve(async (req) => {
   try {
     const { messages, provider, model, agentPrompt, stream, testMode } = await req.json();
     
-    console.log('Chat request received:', { provider, model, messagesCount: messages.length, testMode });
+    console.log('=== CHAT REQUEST START ===');
+    console.log('Provider:', provider);
+    console.log('Model:', model);  
+    console.log('Test Mode:', testMode);
+    console.log('Available env vars:', Object.keys(Deno.env.toObject()).filter(k => k.includes('API_KEY')));
 
     let response;
     let generatedText;
