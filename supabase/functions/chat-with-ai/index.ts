@@ -86,7 +86,23 @@ serve(async (req) => {
                       return;
                     }
                     if (data.trim()) {
-                      controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
+                      try {
+                        const parsed = JSON.parse(data);
+                        // Send complete response for Perplexity (not delta streaming)
+                        if (parsed.choices && parsed.choices[0] && parsed.choices[0].message) {
+                          const transformedData = {
+                            choices: [{
+                              delta: { content: parsed.choices[0].message.content }
+                            }]
+                          };
+                          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(transformedData)}\n\n`));
+                          controller.enqueue(new TextEncoder().encode(`data: [DONE]\n\n`));
+                          controller.close();
+                          return;
+                        }
+                      } catch (e) {
+                        console.error('Error parsing Perplexity stream data:', e);
+                      }
                     }
                   }
                 }
@@ -137,6 +153,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      console.log('Perplexity API response:', JSON.stringify(data, null, 2));
       generatedText = data.choices[0].message.content;
       
     } else if (provider === 'openai') {

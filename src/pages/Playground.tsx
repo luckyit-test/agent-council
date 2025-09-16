@@ -244,10 +244,24 @@ const Playground = () => {
                 if (data.trim()) {
                   try {
                     const parsed = JSON.parse(data);
-                    const content = parsed.choices?.[0]?.delta?.content;
-                    if (content) {
-                      fullContent += content;
-                      setStreamingContent(fullContent);
+                    
+                    // Handle different API formats
+                    let content = '';
+                    if (aiProvider === 'perplexity') {
+                      // Perplexity returns full response at the end
+                      if (parsed.choices && parsed.choices[0] && parsed.choices[0].message) {
+                        content = parsed.choices[0].message.content;
+                        // For perplexity, replace all content at once
+                        fullContent = content;
+                        setStreamingContent(fullContent);
+                      }
+                    } else {
+                      // OpenAI streaming format
+                      content = parsed.choices?.[0]?.delta?.content || '';
+                      if (content) {
+                        fullContent += content;
+                        setStreamingContent(fullContent);
+                      }
                     }
                   } catch (e) {
                     // Ignore parse errors for partial data
