@@ -197,7 +197,7 @@ const Playground = () => {
       console.log('Calling supabase function...');
       
       // Check if streaming should be used
-      const useStreaming = aiProvider === 'perplexity' || aiProvider === 'openai';
+      const useStreaming = aiProvider === 'perplexity' || (aiProvider === 'openai' && !aiModel?.startsWith('gpt-5'));
 
       if (useStreaming) {
         // Get current session for authorization
