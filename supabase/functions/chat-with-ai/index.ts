@@ -188,7 +188,7 @@ serve(async (req) => {
 
       // Для новых моделей используем max_completion_tokens и не передаем temperature
       if (isNewModel) {
-        requestBody.max_completion_tokens = 1000;
+        requestBody.max_completion_tokens = 4000;  // Увеличиваем лимит токенов для GPT-5
         // Новые модели не поддерживают temperature
       } else {
         requestBody.max_tokens = 1000;
@@ -234,8 +234,47 @@ serve(async (req) => {
         console.log('Using non-streaming mode');
         const data = await response.json();
         console.log('OpenAI response data:', JSON.stringify(data, null, 2));
-        generatedText = data.choices?.[0]?.message?.content || 'No response generated';
-        console.log('Generated text:', generatedText);
+        
+        // Обрабатываем случай когда контент пустой из-за использования reasoning tokens
+        let content = data.choices?.[0]?.message?.content || '';
+        const finishReason = data.choices?.[0]?.finish_reason;
+        
+        if (!content && finishReason === 'length') {
+          // Если контент пустой из-за лимита reasoning tokens, запрашиваем более простой ответ
+          console.log('Empty content due to reasoning tokens limit, making simplified request...');
+          
+          const simplifiedRequest = {
+            model: model || 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: 'Дайте краткий и четкий ответ на вопрос пользователя.' },
+              ...messages.slice(-2) // Берем только последние 2 сообщения для контекста
+            ],
+            max_completion_tokens: isNewModel ? 2000 : undefined,
+            max_tokens: isNewModel ? undefined : 1000,
+            temperature: isNewModel ? undefined : 0.3
+          };
+          
+          const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(simplifiedRequest),
+          });
+          
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json();
+            content = retryData.choices?.[0]?.message?.content || 'Извините, не удалось сгенерировать ответ.';
+            console.log('Retry response successful:', content.substring(0, 100));
+          } else {
+            content = 'Извините, произошла ошибка при генерации ответа.';
+          }
+        }
+        
+        generatedText = content;
+        console.log('Final generatedText value:', generatedText);
+        console.log('Final generatedText length:', generatedText.length);
       }
       
     } else if (provider === 'deepseek') {
