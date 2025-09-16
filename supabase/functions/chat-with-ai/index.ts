@@ -55,19 +55,6 @@ serve(async (req) => {
       }
     };
 
-        if (error || !data) {
-          console.error(`API key not found for ${providerName}:`, error);
-          return null;
-        }
-
-        console.log(`${providerName} API key found in database`);
-        return data.api_key;
-      } catch (err) {
-        console.error(`Error fetching API key for ${providerName}:`, err);
-        return null;
-      }
-    };
-
     // Получаем user ID из JWT токена один раз
     const authHeader = req.headers.get('authorization');
     let userId = null;
