@@ -24,10 +24,10 @@ serve(async (req) => {
     // Синхронизируем секреты между edge функциями, если они не найдены
     const checkAndSyncSecret = (keyName: string) => {
       let key = Deno.env.get(keyName);
-      if (!key) {
-        // Пытаемся получить из глобального контекста Supabase
-        console.log(`${keyName} not found, checking global context...`);
-        // В продакшене секреты устанавливаются через Dashboard Supabase
+      console.log(`Checking secret ${keyName}: ${key ? 'FOUND' : 'NOT FOUND'}`);
+      if (key) {
+        console.log(`${keyName} length:`, key.length);
+        console.log(`${keyName} prefix:`, key.substring(0, Math.min(10, key.length)));
       }
       return key;
     };
@@ -40,12 +40,14 @@ serve(async (req) => {
       
       if (!openaiKey) {
         console.error('OpenAI API key not found');
-        return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+        console.error('All env vars:', Object.keys(Deno.env.toObject()));
+        return new Response(JSON.stringify({ error: 'OpenAI API key not configured. Please add it through the API Keys page.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
+      console.log('OpenAI key found, length:', openaiKey.length);
       console.log('Calling OpenAI API with model:', model);
       
       const openaiMessages = agentPrompt 
@@ -87,12 +89,14 @@ serve(async (req) => {
       
       if (!deepseekKey) {
         console.error('Deepseek API key not found');
-        return new Response(JSON.stringify({ error: 'Deepseek API key not configured' }), {
+        console.error('All env vars:', Object.keys(Deno.env.toObject()));
+        return new Response(JSON.stringify({ error: 'Deepseek API key not configured. Please add it through the API Keys page.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
+      console.log('Deepseek key found, length:', deepseekKey.length);
       console.log('Calling Deepseek API with model:', model);
       
       const deepseekMessages = agentPrompt 
