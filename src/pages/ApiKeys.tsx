@@ -102,7 +102,8 @@ const ApiKeys = () => {
       toast({
         title: "Ошибка",
         description: "Введите API ключ для сохранения",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 2000
       });
       return;
     }
@@ -133,14 +134,16 @@ const ApiKeys = () => {
 
       toast({
         title: "API ключ сохранён",
-        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} сохранён в Supabase`
+        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} сохранён в Supabase`,
+        duration: 2000
       });
     } catch (error) {
       console.error('Save key error:', error);
       toast({
         title: "Ошибка сохранения",
         description: "Не удалось сохранить ключ в Supabase",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 2000
       });
     }
   };
@@ -169,14 +172,16 @@ const ApiKeys = () => {
 
       toast({
         title: "API ключ удалён",
-        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} удалён`
+        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} удалён`,
+        duration: 2000
       });
     } catch (error) {
       console.error('Delete key error:', error);
       toast({
         title: "Ошибка удаления",
         description: "Не удалось удалить ключ из Supabase",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 2000
       });
     }
   };
@@ -190,7 +195,8 @@ const ApiKeys = () => {
       toast({
         title: "Ошибка",
         description: "API ключ не найден",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 2000
       });
       return;
     }
@@ -238,7 +244,8 @@ const ApiKeys = () => {
           toast({
             title: "Ошибка тестирования Perplexity",
             description: error?.message || data?.error || "Неизвестная ошибка API",
-            variant: "destructive"
+            variant: "destructive",
+            duration: 2000
           });
         }
       } else if (providerId === 'deepseek') {
@@ -272,7 +279,8 @@ const ApiKeys = () => {
         description: isValid 
           ? `API ключ для ${provider.name} работает корректно`
           : `Не удалось подключиться к ${provider.name}. Проверьте API ключ.`,
-        variant: isValid ? "default" : "destructive"
+        variant: isValid ? "default" : "destructive",
+        duration: 2000
       });
     } catch (error) {
       console.error('Test connection error:', error);
@@ -283,7 +291,8 @@ const ApiKeys = () => {
       toast({
         title: "Ошибка тестирования",
         description: "Произошла ошибка при тестировании подключения",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 2000
       });
     } finally {
       setTestingProvider(null);
@@ -299,7 +308,7 @@ const ApiKeys = () => {
       case 'testing':
         return <Badge className="bg-blue-100 text-blue-700">Тестирование...</Badge>;
       case 'valid':
-        return <Badge className="bg-primary/10 text-primary">Работает</Badge>;
+        return <Badge className="bg-primary/10 text-primary">Готов к использованию</Badge>;
       case 'invalid':
         return <Badge variant="destructive">Ошибка</Badge>;
     }
@@ -423,13 +432,13 @@ const ApiKeys = () => {
                           }));
                         }}
                         placeholder="Введите ваш API ключ..."
-                        className="pr-10"
+                        className="h-10"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-0 top-0 h-full px-3 py-2"
+                        className="absolute right-0 top-0 h-10 w-10"
                         onClick={() => {
                           setShowKeys(prev => ({
                             ...prev,
@@ -448,7 +457,7 @@ const ApiKeys = () => {
                     <Button
                       onClick={() => saveApiKey(provider.id, apiKeys[provider.id] || "")}
                       disabled={!apiKeys[provider.id]}
-                      size="sm"
+                      className="h-10 whitespace-nowrap"
                     >
                       <Plus className="w-4 h-4 mr-1" />
                       Сохранить
@@ -457,8 +466,8 @@ const ApiKeys = () => {
                     {provider.status === 'configured' && (
                       <Button
                         variant="outline"
-                        size="sm"
                         onClick={() => setDeleteDialog({ open: true, providerId: provider.id })}
+                        className="h-10 w-10 p-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -472,7 +481,7 @@ const ApiKeys = () => {
                     variant="outline"
                     onClick={() => testConnection(provider.id)}
                     disabled={testingProvider === provider.id}
-                    className="w-full"
+                    className="w-full h-10"
                   >
                     {testingProvider === provider.id ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
