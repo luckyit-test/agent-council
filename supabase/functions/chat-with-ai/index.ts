@@ -38,7 +38,16 @@ serve(async (req) => {
           return null;
         }
         
-        // Используем service role для обхода RLS, но с проверкой user_id
+        // ОТЛАДКА: Показываем все ключи в базе для этого провайдера
+        const { data: allProviderKeys, error: allError } = await supabase
+          .from('user_api_keys')
+          .select('user_id, provider, created_at')
+          .eq('provider', providerName);
+        
+        console.log(`All ${providerName} keys in database:`, allProviderKeys);
+        console.log(`All keys error:`, allError);
+        
+        // Ищем конкретный ключ пользователя
         const { data, error } = await supabase
           .from('user_api_keys')
           .select('api_key')
@@ -46,22 +55,24 @@ serve(async (req) => {
           .eq('user_id', userId)
           .single();
 
-        console.log(`Query result for ${providerName}:`, { data, error });
+        console.log(`Specific query for user ${userId} and provider ${providerName}:`);
+        console.log('Result data:', data);
+        console.log('Result error:', error);
 
         if (error) {
-          console.error(`API key query error for ${providerName}:`, error);
+          console.error(`API key query failed:`, error);
           return null;
         }
 
-        if (!data) {
-          console.error(`No API key found for ${providerName} and user ${userId}`);
+        if (!data || !data.api_key) {
+          console.error(`No API key data returned`);
           return null;
         }
 
-        console.log(`${providerName} API key found in database, length:`, data.api_key?.length);
+        console.log(`SUCCESS: ${providerName} API key found, length:`, data.api_key.length);
         return data.api_key;
       } catch (err) {
-        console.error(`Error fetching API key for ${providerName}:`, err);
+        console.error(`Exception in getApiKey for ${providerName}:`, err);
         return null;
       }
     };
