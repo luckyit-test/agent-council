@@ -274,6 +274,9 @@ const ApiKeys = () => {
               model: 'gpt-4o-mini',
               stream: false,
               testMode: true
+            },
+            headers: {
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
             }
           }),
           15000
@@ -301,6 +304,9 @@ const ApiKeys = () => {
               model: 'sonar-deep-research',
               stream: false,
               testMode: true
+            },
+            headers: {
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
             }
           }),
           15000
@@ -328,6 +334,9 @@ const ApiKeys = () => {
               model: 'deepseek-chat',
               stream: false,
               testMode: true
+            },
+            headers: {
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
             }
           }),
           15000
