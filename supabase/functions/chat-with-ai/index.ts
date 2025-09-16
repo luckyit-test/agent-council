@@ -177,10 +177,13 @@ serve(async (req) => {
         model.includes('gpt-4.1')
       );
 
+      // GPT-5 модели требуют верификации организации для стриминга
+      const shouldStream = stream && !model?.startsWith('gpt-5');
+
       const requestBody: any = {
-        model: model || 'gpt-5-2025-08-07',
+        model: model || 'gpt-4o-mini',
         messages: openaiMessages,
-        stream
+        stream: shouldStream
       };
 
       // Для новых моделей используем max_completion_tokens и не передаем temperature
