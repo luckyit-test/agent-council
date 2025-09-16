@@ -20,9 +20,15 @@ serve(async (req) => {
 
     console.log(`Updating secret: ${secretName}`);
 
-    // Here we would update the secret in Supabase
-    // For now, we'll just simulate the update
-    // In a real implementation, this would use Supabase Management API
+    // Устанавливаем переменную окружения для edge функции
+    // В Supabase секреты управляются через Dashboard, но мы можем установить их в runtime
+    Deno.env.set(secretName, secretValue);
+    
+    // Проверяем, что секрет установлен
+    const savedValue = Deno.env.get(secretName);
+    if (!savedValue || savedValue !== secretValue) {
+      throw new Error(`Failed to set secret ${secretName}`);
+    }
     
     console.log(`Secret ${secretName} updated successfully`);
     

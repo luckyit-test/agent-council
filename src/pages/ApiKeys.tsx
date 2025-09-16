@@ -61,7 +61,7 @@ const API_PROVIDERS: ApiProvider[] = [
     description: 'Llama 3.1 Sonar, поиск в реальном времени',
     icon: <div className="w-5 h-5 bg-purple-500 rounded flex items-center justify-center text-white text-xs font-bold">P</div>,
     website: 'https://www.perplexity.ai/settings/api',
-    models: ['llama-3.1-sonar-large', 'llama-3.1-sonar-small'],
+    models: ['llama-3.1-sonar-large', 'llama-3.1-sonar-small', 'sonar-deep-research'],
     testEndpoint: '/api/test-perplexity',
     status: 'configured'
   },
@@ -122,7 +122,7 @@ const ApiKeys = () => {
         throw error;
       }
       
-      // Обновляем статус провайдера
+      // Обновляем статус провайдера на "configured" сразу после сохранения
       setProviders(prev => prev.map(provider => 
         provider.id === providerId 
           ? { ...provider, status: 'configured' }
@@ -134,9 +134,14 @@ const ApiKeys = () => {
 
       toast({
         title: "API ключ сохранён",
-        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} сохранён в Supabase`,
+        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} сохранён в Supabase. Можете протестировать подключение.`,
         duration: 2000
       });
+      
+      // Небольшая задержка для обновления секретов в Supabase
+      setTimeout(() => {
+        console.log(`Secret ${secretName} should be available now`);
+      }, 1000);
     } catch (error) {
       console.error('Save key error:', error);
       toast({

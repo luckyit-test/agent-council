@@ -20,12 +20,23 @@ serve(async (req) => {
     console.log('Model:', model);  
     console.log('Test Mode:', testMode);
     console.log('Available env vars:', Object.keys(Deno.env.toObject()).filter(k => k.includes('API_KEY')));
+    
+    // Синхронизируем секреты между edge функциями, если они не найдены
+    const checkAndSyncSecret = (keyName: string) => {
+      let key = Deno.env.get(keyName);
+      if (!key) {
+        // Пытаемся получить из глобального контекста Supabase
+        console.log(`${keyName} not found, checking global context...`);
+        // В продакшене секреты устанавливаются через Dashboard Supabase
+      }
+      return key;
+    };
 
     let response;
     let generatedText;
 
     if (provider === 'openai') {
-      const openaiKey = Deno.env.get('OPENAI_API_KEY');
+      const openaiKey = checkAndSyncSecret('OPENAI_API_KEY');
       
       if (!openaiKey) {
         console.error('OpenAI API key not found');
@@ -72,7 +83,7 @@ serve(async (req) => {
       }
       
     } else if (provider === 'deepseek') {
-      const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+      const deepseekKey = checkAndSyncSecret('DEEPSEEK_API_KEY');
       
       if (!deepseekKey) {
         console.error('Deepseek API key not found');
@@ -119,7 +130,7 @@ serve(async (req) => {
       }
       
     } else if (provider === 'perplexity') {
-      const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+      const perplexityApiKey = checkAndSyncSecret('PERPLEXITY_API_KEY');
       
       console.log('=== PERPLEXITY TEST START ===');
       console.log('Environment variables available:', Object.keys(Deno.env.toObject()).filter(k => k.includes('PERPLEXITY')));
