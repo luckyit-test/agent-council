@@ -75,7 +75,6 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   const [agentDescription, setAgentDescription] = useState("");
   const [agentPrompt, setAgentPrompt] = useState("");
   const [aiProvider, setAiProvider] = useState("");
-  const [aiModel, setAiModel] = useState("");
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [enableWebSearch, setEnableWebSearch] = useState(false);
   const [enableDeepResearch, setEnableDeepResearch] = useState(false);
@@ -104,7 +103,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   }, [open]);
 
   const handleCreateAgent = () => {
-    if (!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || !aiModel) {
+    if (!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider) {
       toast({
         title: "Ошибка",
         description: "Пожалуйста, заполните все поля",
@@ -122,13 +121,29 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
       return;
     }
 
+    // Определяем модель по провайдеру
+    const getDefaultModel = (provider: string) => {
+      switch (provider) {
+        case 'openai':
+          return 'gpt-5-2025-08-07';
+        case 'anthropic':
+          return 'claude-opus-4-1-20250805';
+        case 'google':
+          return 'gemini-1.5-pro';
+        case 'perplexity':
+          return 'sonar-pro';
+        default:
+          return 'gpt-5-2025-08-07';
+      }
+    };
+
     const success = createCustomAgent({
       name: agentName,
       type: agentType,
       description: agentDescription,
       prompt: agentPrompt,
       aiProvider,
-      aiModel,
+      aiModel: getDefaultModel(aiProvider),
       capabilities: {
         webSearch: enableWebSearch,
         deepResearch: enableDeepResearch
@@ -148,7 +163,6 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
       setAgentDescription("");
       setAgentPrompt("");
       setAiProvider("");
-      setAiModel("");
       setEnableWebSearch(false);
       setEnableDeepResearch(false);
       
@@ -166,7 +180,6 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   const selectedType = agentTypes.find(type => type.value === agentType);
   const availableProviders = aiProviders.filter(provider => configuredProviders.includes(provider.value));
   const selectedProvider = availableProviders.find(provider => provider.value === aiProvider);
-  const availableModels = selectedProvider?.models || [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -230,13 +243,10 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
               )}
             </div>
             
-            {/* AI Provider Selection - перемещено под тип агента */}
+            {/* AI Provider Selection */}
             <div>
               <Label htmlFor="ai-provider">Нейросеть</Label>
-              <Select value={aiProvider} onValueChange={(value) => {
-                setAiProvider(value);
-                setAiModel(""); // Reset model when provider changes
-              }}>
+              <Select value={aiProvider} onValueChange={setAiProvider}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Выберите нейросеть" />
                 </SelectTrigger>
@@ -244,11 +254,26 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                   {availableProviders.length > 0 ? (
                     availableProviders.map((provider) => {
                       const Icon = provider.icon;
+                      const getModelLabel = (providerValue: string) => {
+                        switch (providerValue) {
+                          case 'openai': return 'GPT-5';
+                          case 'anthropic': return 'Claude 4 Opus';
+                          case 'google': return 'Gemini 1.5 Pro';
+                          case 'perplexity': return 'Sonar Pro';
+                          default: return 'По умолчанию';
+                        }
+                      };
+                      
                       return (
                         <SelectItem key={provider.value} value={provider.value}>
-                          <div className="flex items-center gap-2">
-                            <Icon className="w-4 h-4" />
-                            <span>{provider.label}</span>
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-4 h-4" />
+                              <span>{provider.label}</span>
+                            </div>
+                            <Badge variant="secondary" className="text-xs ml-2">
+                              {getModelLabel(provider.value)}
+                            </Badge>
                           </div>
                         </SelectItem>
                       );
@@ -265,40 +290,24 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                   ⚠️ Нет настроенных нейросетей. Перейдите в раздел "API Ключи" для настройки.
                 </p>
               )}
-            </div>
-
-            {/* AI Model Selection */}
-            {selectedProvider && (
-              <div>
-                <Label htmlFor="ai-model">Модель</Label>
-                <Select value={aiModel} onValueChange={setAiModel}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Выберите модель" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableModels.map((model) => (
-                      <SelectItem key={model.value} value={model.value}>
-                        {model.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {selectedProvider && (
                 <div className="mt-2 p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
                     <selectedProvider.icon className="w-4 h-4" />
                     <Badge variant="outline">{selectedProvider.label}</Badge>
-                    {aiModel && (
-                      <Badge variant="secondary" className="text-xs">
-                        {availableModels.find(m => m.value === aiModel)?.label}
-                      </Badge>
-                    )}
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedProvider.value === 'openai' ? 'GPT-5' :
+                       selectedProvider.value === 'anthropic' ? 'Claude 4 Opus' :
+                       selectedProvider.value === 'google' ? 'Gemini 1.5 Pro' :
+                       selectedProvider.value === 'perplexity' ? 'Sonar Pro' : 'По умолчанию'}
+                    </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Агент будет использовать выбранную модель для генерации ответов
+                    Агент будет использовать лучшую модель для выбранного провайдера
                   </p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             
             {/* Дополнительные возможности */}
             <div className="space-y-4">
@@ -403,7 +412,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
             </Button>
             <Button 
               onClick={handleCreateAgent}
-              disabled={!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || !aiModel || agentPrompt.length < 10 || availableProviders.length === 0}
+              disabled={!agentName || !agentType || !agentDescription || !agentPrompt || !aiProvider || agentPrompt.length < 10 || availableProviders.length === 0}
               className="bg-gradient-ai border-0"
             >
               Создать агента

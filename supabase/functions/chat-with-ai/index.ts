@@ -127,6 +127,44 @@ serve(async (req) => {
       const openaiMessages = agentPrompt 
         ? [{ role: 'system', content: agentPrompt }, ...messages]
         : messages;
+
+      // Определяем параметры для OpenAI в зависимости от модели
+      const isNewModel = model && (
+        model.startsWith('gpt-5') || 
+        model.startsWith('o3') || 
+        model.startsWith('o4') ||
+        model.includes('gpt-4.1')
+      );
+
+      const requestBody: any = {
+        model: model || 'gpt-5-2025-08-07',
+        messages: openaiMessages,
+        stream
+      };
+
+      // Для новых моделей используем max_completion_tokens и не передаем temperature
+      if (isNewModel) {
+        requestBody.max_completion_tokens = 1000;
+        // Новые модели не поддерживают temperature
+      } else {
+        requestBody.max_tokens = 1000;
+        requestBody.temperature = 0.7;
+      }
+
+      // Добавляем параметры для Web Search и Deep Research если включены
+      if (capabilities.webSearch && model?.includes('gpt')) {
+        // Для OpenAI можно использовать функции или инструкции в системном промпте
+        if (openaiMessages[0]?.role === 'system') {
+          openaiMessages[0].content += '\n\nВы можете использовать веб-поиск для получения актуальной информации.';
+        }
+      }
+
+      if (capabilities.deepResearch && model?.includes('gpt')) {
+        // Для глубокого исследования добавляем инструкции
+        if (openaiMessages[0]?.role === 'system') {
+          openaiMessages[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения.';
+        }
+      }
       
       response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -134,13 +172,7 @@ serve(async (req) => {
           'Authorization': `Bearer ${openaiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: model || 'gpt-4o-mini',
-          messages: openaiMessages,
-          stream,
-          max_tokens: 1000,
-          temperature: 0.7,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -236,18 +268,50 @@ serve(async (req) => {
 
       console.log('Calling Perplexity API with model:', model);
       
+      const perplexityBody: any = {
+        model: model === 'sonar-deep-research' ? 'sonar-deep-research' : 'llama-3.1-sonar-small-128k-online',
+        messages: apiMessages,
+        stream,
+        max_tokens: 4000,
+        temperature: 0.2,
+        top_p: 0.9,
+        return_images: false,
+        return_related_questions: false,
+        frequency_penalty: 1,
+        presence_penalty: 0
+      };
+
+      // Настройки для Web Search
+      if (capabilities.webSearch) {
+        perplexityBody.search_domain_filter = [];  // Убираем ограничения на домены
+        perplexityBody.search_recency_filter = 'week';  // Более свежие результаты
+        perplexityBody.return_related_questions = true;  // Возвращаем связанные вопросы
+      } else {
+        perplexityBody.search_domain_filter = ['perplexity.ai'];
+        perplexityBody.search_recency_filter = 'month';
+      }
+
+      // Настройки для Deep Research
+      if (capabilities.deepResearch) {
+        perplexityBody.model = 'llama-3.1-sonar-huge-128k-online';  // Более мощная модель
+        perplexityBody.max_tokens = 6000;  // Больше токенов для подробного ответа
+        perplexityBody.search_recency_filter = 'week';
+        perplexityBody.return_related_questions = true;
+        perplexityBody.temperature = 0.1;  // Более детерминированные ответы
+        
+        // Дополняем системный промпт для глубокого исследования
+        if (apiMessages[0]?.role === 'system') {
+          apiMessages[0].content += '\n\nПроведите глубокое исследование с анализом множества источников, рассмотрите различные точки зрения и предоставьте всестороннее освещение темы.';
+        }
+      }
+
       response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${perplexityApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: model === 'sonar-deep-research' ? 'sonar-deep-research' : 'llama-3.1-sonar-small-128k-online',
-          messages: apiMessages,
-          stream,
-          max_tokens: 4000
-        }),
+        body: JSON.stringify(perplexityBody),
       });
 
       if (!response.ok) {
