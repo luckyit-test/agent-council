@@ -142,17 +142,30 @@ const ApiKeys = () => {
     }
 
     try {
+      console.log('=== SAVE API KEY DEBUG ===');
+      console.log('Current user:', user);
+      console.log('Provider:', providerId);
+      console.log('Key length:', key.trim().length);
+      
+      // Проверяем текущую сессию
+      const currentSession = await supabase.auth.getSession();
+      console.log('Current session exists:', !!currentSession.data.session);
+      console.log('Session user ID:', currentSession.data.session?.user?.id);
+      
       // Проверяем, существует ли уже ключ для этого провайдера
-      const { data: existingKey } = await supabase
+      const { data: existingKey, error: checkError } = await supabase
         .from('user_api_keys')
         .select('id')
         .eq('provider', providerId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      console.log('Existing key check:', { existingKey, checkError });
 
       let error;
       
       if (existingKey) {
+        console.log('Updating existing key...');
         // Обновляем существующий ключ
         const result = await supabase
           .from('user_api_keys')
@@ -163,7 +176,9 @@ const ApiKeys = () => {
           .eq('provider', providerId)
           .eq('user_id', user.id);
         error = result.error;
+        console.log('Update result:', result);
       } else {
+        console.log('Creating new key...');
         // Создаем новый ключ
         const result = await supabase
           .from('user_api_keys')
@@ -173,6 +188,7 @@ const ApiKeys = () => {
             user_id: user.id
           });
         error = result.error;
+        console.log('Insert result:', result);
       }
 
       if (error) {
