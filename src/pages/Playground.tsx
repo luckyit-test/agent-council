@@ -245,26 +245,24 @@ const Playground = () => {
                   try {
                     const parsed = JSON.parse(data);
                     
-                    // Handle different API formats
+                    // Handle different response formats
                     let content = '';
-                    if (aiProvider === 'perplexity') {
-                      // Perplexity returns full response at the end
-                      if (parsed.choices && parsed.choices[0] && parsed.choices[0].message) {
-                        content = parsed.choices[0].message.content;
-                        // For perplexity, replace all content at once
-                        fullContent = content;
-                        setStreamingContent(fullContent);
-                      }
-                    } else {
-                      // OpenAI streaming format
-                      content = parsed.choices?.[0]?.delta?.content || '';
-                      if (content) {
-                        fullContent += content;
-                        setStreamingContent(fullContent);
-                      }
+                    
+                    // Check if this is a complete message response (Perplexity format)
+                    if (parsed.choices && parsed.choices[0] && parsed.choices[0].message && parsed.choices[0].message.content) {
+                      // Complete response - replace all content
+                      fullContent = parsed.choices[0].message.content;
+                      setStreamingContent(fullContent);
+                    } 
+                    // Check if this is streaming delta format (OpenAI format)
+                    else if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                      // Streaming delta - append content
+                      content = parsed.choices[0].delta.content;
+                      fullContent += content;
+                      setStreamingContent(fullContent);
                     }
                   } catch (e) {
-                    // Ignore parse errors for partial data
+                    console.error('Error parsing streaming data:', e);
                   }
                 }
               }
