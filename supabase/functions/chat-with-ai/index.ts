@@ -30,10 +30,22 @@ serve(async (req) => {
     // Функция для получения API ключа из базы данных
     const getApiKey = async (providerName: string, userId?: string) => {
       try {        
+        console.log(`=== Getting API key for ${providerName} ===`);
+        console.log('User ID:', userId);
+        
         if (!userId) {
-          console.error('No user ID available');
+          console.error('No user ID available for getApiKey');
           return null;
         }
+        
+        // Проверяем все ключи пользователя для отладки
+        const { data: allKeys, error: allKeysError } = await supabase
+          .from('user_api_keys')
+          .select('*')
+          .eq('user_id', userId);
+        
+        console.log('All user keys:', allKeys);
+        console.log('All keys error:', allKeysError);
         
         const { data, error } = await supabase
           .from('user_api_keys')
@@ -42,12 +54,14 @@ serve(async (req) => {
           .eq('user_id', userId)
           .single();
 
+        console.log(`Query result for ${providerName}:`, { data, error });
+
         if (error || !data) {
           console.error(`API key not found for ${providerName}:`, error);
           return null;
         }
 
-        console.log(`${providerName} API key found in database`);
+        console.log(`${providerName} API key found in database, length:`, data.api_key?.length);
         return data.api_key;
       } catch (err) {
         console.error(`Error fetching API key for ${providerName}:`, err);
@@ -59,15 +73,26 @@ serve(async (req) => {
     const authHeader = req.headers.get('authorization');
     let userId = null;
     
+    console.log('=== AUTH HEADER DEBUG ===');
+    console.log('Auth header exists:', !!authHeader);
+    console.log('Auth header value:', authHeader?.substring(0, 50) + '...');
+    
     if (authHeader) {
       try {
         const token = authHeader.replace('Bearer ', '');
+        console.log('Token length:', token.length);
+        console.log('Token parts:', token.split('.').length);
+        
         const payload = JSON.parse(atob(token.split('.')[1]));
         userId = payload.sub;
+        console.log('Full JWT payload:', payload);
         console.log('User ID from JWT:', userId);
       } catch (e) {
         console.error('Error parsing JWT:', e);
+        console.error('Auth header that failed:', authHeader);
       }
+    } else {
+      console.error('No authorization header found');
     }
 
     let response;
