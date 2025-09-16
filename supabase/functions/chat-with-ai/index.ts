@@ -22,23 +22,31 @@ serve(async (req) => {
 
     if (provider === 'perplexity') {
       const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+      
+      console.log('=== PERPLEXITY TEST START ===');
+      console.log('Environment variables available:', Object.keys(Deno.env.toObject()).filter(k => k.includes('PERPLEXITY')));
+      
       if (!perplexityApiKey) {
-        console.error('PERPLEXITY_API_KEY environment variable not found');
-        throw new Error('Perplexity API key not configured');
+        console.error('PERPLEXITY_API_KEY not found in environment');
+        return new Response(JSON.stringify({ 
+          error: 'Perplexity API key not configured in Supabase secrets'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       
-      // Подробная диагностика API ключа
-      console.log('=== PERPLEXITY API DIAGNOSTICS ===');
-      console.log('API key length:', perplexityApiKey.length);
-      console.log('API key starts with:', perplexityApiKey.substring(0, 5));
-      console.log('API key first 10 chars:', perplexityApiKey.substring(0, 10) + '...');
+      console.log('API key length:', perplexityApiKey?.length || 0);
+      console.log('API key prefix:', perplexityApiKey?.substring(0, 10) || 'N/A');
       
-      // Проверяем формат ключа
       if (!perplexityApiKey.startsWith('pplx-')) {
-        console.error('ERROR: Perplexity API key should start with "pplx-"');
-        console.log('Current key format seems incorrect');
-      } else {
-        console.log('✓ API key format appears correct (starts with pplx-)');
+        console.error('Invalid API key format - should start with pplx-');
+        return new Response(JSON.stringify({ 
+          error: 'Invalid Perplexity API key format - should start with pplx-'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       // Build messages array with agent prompt as system message
