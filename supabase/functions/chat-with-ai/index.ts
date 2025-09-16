@@ -68,9 +68,6 @@ serve(async (req) => {
       }
     };
 
-    let response;
-    let generatedText;
-    
     // Получаем user ID из JWT токена один раз
     const authHeader = req.headers.get('authorization');
     let userId = null;
@@ -85,6 +82,9 @@ serve(async (req) => {
         console.error('Error parsing JWT:', e);
       }
     }
+
+    let response;
+    let generatedText;
 
     if (provider === 'openai') {
       const openaiKey = await getApiKey('openai', userId);
