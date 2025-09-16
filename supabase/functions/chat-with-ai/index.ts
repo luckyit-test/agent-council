@@ -46,17 +46,10 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
         body: JSON.stringify({
-          model: model === 'sonar' ? 'llama-3.1-sonar-small-128k-online' : model,
+          model: model === 'sonar-deep-research' ? 'sonar-deep-research' : 'llama-3.1-sonar-small-128k-online',
           messages: apiMessages,
           stream: true,
-          temperature: 0.7,
-          top_p: 0.9,
-          max_tokens: 4000,
-          return_images: false,
-          return_related_questions: false,
-          search_recency_filter: 'month',
-          frequency_penalty: 1,
-          presence_penalty: 0
+          max_tokens: 4000
         }),
         });
 
@@ -120,16 +113,9 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: model === 'sonar' ? 'llama-3.1-sonar-small-128k-online' : model,
+          model: model === 'sonar-deep-research' ? 'sonar-deep-research' : 'llama-3.1-sonar-small-128k-online',
           messages: apiMessages,
-          temperature: 0.7,
-          top_p: 0.9,
-          max_tokens: 4000,
-          return_images: false,
-          return_related_questions: false,
-          search_recency_filter: 'month',
-          frequency_penalty: 1,
-          presence_penalty: 0
+          max_tokens: 4000
         }),
       });
 

@@ -242,7 +242,7 @@ const ApiKeys = () => {
           body: {
             messages: [{ role: 'user', content: 'Hello' }],
             provider: 'perplexity',
-            model: 'sonar',
+            model: 'sonar-deep-research',
             stream: false,
             testMode: true
           }
@@ -251,6 +251,12 @@ const ApiKeys = () => {
         testResult = !error && data && !data.error;
         if (error || (data && data.error)) {
           console.error('Perplexity test error:', error || data.error);
+          // Показываем подробную ошибку пользователю
+          toast({
+            title: "Ошибка тестирования Perplexity",
+            description: error?.message || data?.error || "Неизвестная ошибка API",
+            variant: "destructive"
+          });
         }
       } else if (providerId === 'openai') {
         // Тестируем OpenAI через chat-with-ai функцию
