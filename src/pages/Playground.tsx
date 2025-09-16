@@ -309,6 +309,7 @@ const Playground = () => {
             provider: aiProvider,
             model: aiModel,
             agentPrompt: selectedAgent.prompt,
+            capabilities: selectedAgent.capabilities,
             stream: false,
           },
         });
