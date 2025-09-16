@@ -175,6 +175,45 @@ const ApiKeys = () => {
     });
   };
 
+  const updatePerplexityKey = async (providerId: string, key: string) => {
+    if (!key.trim()) {
+      toast({
+        title: "Ошибка",
+        description: "Введите API ключ для обновления",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('update-secret', {
+        body: {
+          secretName: 'PERPLEXITY_API_KEY',
+          secretValue: key.trim()
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      // Очищаем поле после успешного обновления
+      setApiKeys(prev => ({ ...prev, [providerId]: "" }));
+      
+      toast({
+        title: "Ключ обновлён",
+        description: "Новый ключ Perplexity сохранён в Supabase. Протестируйте подключение.",
+      });
+    } catch (error) {
+      console.error('Update key error:', error);
+      toast({
+        title: "Ошибка обновления",
+        description: "Не удалось обновить ключ в Supabase",
+        variant: "destructive"
+      });
+    }
+  };
+
   const testConnection = async (providerId: string) => {
     const provider = providers.find(p => p.id === providerId);
     const apiKey = apiKeys[providerId];
@@ -399,35 +438,41 @@ const ApiKeys = () => {
                         }}
                         placeholder={
                           provider.id === 'perplexity' 
-                            ? "Ключ сохранён в Supabase" 
+                            ? "Введите новый ключ Perplexity или оставьте пустым для использования сохранённого" 
                             : "Вставьте ваш API ключ..."
                         }
-                        disabled={provider.id === 'perplexity'}
                         className="pr-10"
                       />
-                      {provider.id !== 'perplexity' && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 py-2"
-                          onClick={() => {
-                            setShowKeys(prev => ({
-                              ...prev,
-                              [provider.id]: !prev[provider.id]
-                            }));
-                          }}
-                        >
-                          {showKeys[provider.id] ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 py-2"
+                        onClick={() => {
+                          setShowKeys(prev => ({
+                            ...prev,
+                            [provider.id]: !prev[provider.id]
+                          }));
+                        }}
+                      >
+                        {showKeys[provider.id] ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                     
-                    {provider.id !== 'perplexity' && (
+                    {provider.id === 'perplexity' ? (
+                      <Button
+                        onClick={() => updatePerplexityKey(provider.id, apiKeys[provider.id] || "")}
+                        disabled={!apiKeys[provider.id]}
+                        size="sm"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Обновить в Supabase
+                      </Button>
+                    ) : (
                       <>
                         <Button
                           onClick={() => saveApiKey(provider.id, apiKeys[provider.id] || "")}
