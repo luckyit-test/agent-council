@@ -30,8 +30,26 @@ serve(async (req) => {
     // Функция для получения API ключа из базы данных
     const getApiKey = async (providerName: string, userId?: string) => {
       try {
-        // Если userId не передан, используем auth.uid() для получения текущего пользователя
-        const userIdToUse = userId || '00000000-0000-0000-0000-000000000000'; // fallback для тестирования
+        // Получаем user ID из JWT токена
+        const authHeader = req.headers.get('authorization');
+        let userIdToUse = userId;
+        
+        if (!userIdToUse && authHeader) {
+          // Парсим JWT токен для получения user ID
+          try {
+            const token = authHeader.replace('Bearer ', '');
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            userIdToUse = payload.sub;
+            console.log('User ID from JWT:', userIdToUse);
+          } catch (e) {
+            console.error('Error parsing JWT:', e);
+          }
+        }
+        
+        if (!userIdToUse) {
+          console.error('No user ID available');
+          return null;
+        }
         
         const { data, error } = await supabase
           .from('user_api_keys')
@@ -165,7 +183,8 @@ serve(async (req) => {
       
       console.log('Perplexity key found, length:', perplexityApiKey.length);
       
-      if (!perplexityApiKey.startsWith('pplx-')) {
+      // В тестовом режиме не проверяем формат ключа
+      if (!testMode && !perplexityApiKey.startsWith('pplx-')) {
         console.error('Invalid API key format - should start with pplx-');
         return new Response(JSON.stringify({ 
           error: 'Invalid Perplexity API key format - should start with pplx-'
