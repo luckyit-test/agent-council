@@ -14,12 +14,18 @@ const supabase = createClient(
 );
 
 serve(async (req) => {
+  console.log('=== EDGE FUNCTION STARTED ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Parsing request body...');
     const { messages, provider, model, agentPrompt, stream, testMode } = await req.json();
     
     console.log('=== CHAT REQUEST START ===');
