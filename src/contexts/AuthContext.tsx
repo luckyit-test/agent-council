@@ -25,23 +25,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Настраиваем слушатель изменений аутентификации
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    let mounted = true;
 
-    // Проверяем существующую сессию
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Функция для установки состояния авторизации
+    const setAuthState = (session: Session | null) => {
+      if (!mounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    // Сначала проверяем существующую сессию
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        setAuthState(session);
+      } catch (error) {
+        console.error('Error in getInitialSession:', error);
+        setAuthState(null);
+      }
+    };
+
+    // Настраиваем слушатель изменений аутентификации
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        setAuthState(session);
+      }
+    );
+
+    // Загружаем начальную сессию
+    getInitialSession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
