@@ -142,16 +142,38 @@ const ApiKeys = () => {
     }
 
     try {
-      // Сохраняем ключ в базе данных Supabase
-      const { error } = await supabase
+      // Проверяем, существует ли уже ключ для этого провайдера
+      const { data: existingKey } = await supabase
         .from('user_api_keys')
-        .upsert({
-          provider: providerId,
-          api_key: key.trim(),
-          user_id: user.id
-        }, {
-          onConflict: 'user_id,provider'
-        });
+        .select('id')
+        .eq('provider', providerId)
+        .eq('user_id', user.id)
+        .single();
+
+      let error;
+      
+      if (existingKey) {
+        // Обновляем существующий ключ
+        const result = await supabase
+          .from('user_api_keys')
+          .update({
+            api_key: key.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('provider', providerId)
+          .eq('user_id', user.id);
+        error = result.error;
+      } else {
+        // Создаем новый ключ
+        const result = await supabase
+          .from('user_api_keys')
+          .insert({
+            provider: providerId,
+            api_key: key.trim(),
+            user_id: user.id
+          });
+        error = result.error;
+      }
 
       if (error) {
         throw error;
@@ -266,6 +288,9 @@ const ApiKeys = () => {
       
       if (providerId === 'openai') {
         console.log('Testing OpenAI connection...');
+        const session = await supabase.auth.getSession();
+        console.log('Current session:', session.data.session?.access_token ? 'exists' : 'missing');
+        
         const { data, error } = await withTimeout(
           supabase.functions.invoke('chat-with-ai', {
             body: {
@@ -276,7 +301,7 @@ const ApiKeys = () => {
               testMode: true
             },
             headers: {
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+              'Authorization': `Bearer ${session.data.session?.access_token}`
             }
           }),
           15000
@@ -296,6 +321,8 @@ const ApiKeys = () => {
         
       } else if (providerId === 'perplexity') {
         console.log('Testing Perplexity connection...');
+        const session = await supabase.auth.getSession();
+        
         const { data, error } = await withTimeout(
           supabase.functions.invoke('chat-with-ai', {
             body: {
@@ -306,7 +333,7 @@ const ApiKeys = () => {
               testMode: true
             },
             headers: {
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+              'Authorization': `Bearer ${session.data.session?.access_token}`
             }
           }),
           15000
@@ -326,6 +353,8 @@ const ApiKeys = () => {
         
       } else if (providerId === 'deepseek') {
         console.log('Testing Deepseek connection...');
+        const session = await supabase.auth.getSession();
+        
         const { data, error } = await withTimeout(
           supabase.functions.invoke('chat-with-ai', {
             body: {
@@ -336,7 +365,7 @@ const ApiKeys = () => {
               testMode: true
             },
             headers: {
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+              'Authorization': `Bearer ${session.data.session?.access_token}`
             }
           }),
           15000
