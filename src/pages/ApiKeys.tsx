@@ -31,6 +31,7 @@ import {
   Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ApiProvider {
   id: string;
@@ -193,11 +194,47 @@ const ApiKeys = () => {
     ));
 
     try {
-      // Симуляция тестирования API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Выполняем реальный тест API через edge функцию
+      let testResult;
       
-      // Для демонстрации - случайный результат
-      const isValid = Math.random() > 0.3;
+      if (providerId === 'perplexity') {
+        // Тестируем Perplexity через chat-with-ai функцию
+        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+          body: {
+            messages: [{ role: 'user', content: 'Hello' }],
+            provider: 'perplexity',
+            model: 'sonar',
+            stream: false,
+            testMode: true
+          }
+        });
+        
+        testResult = !error && data && !data.error;
+        if (error || (data && data.error)) {
+          console.error('Perplexity test error:', error || data.error);
+        }
+      } else if (providerId === 'openai') {
+        // Тестируем OpenAI через chat-with-ai функцию
+        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+          body: {
+            messages: [{ role: 'user', content: 'Hello' }],
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+            stream: false,
+            testMode: true
+          }
+        });
+        
+        testResult = !error && data && !data.error;
+        if (error || (data && data.error)) {
+          console.error('OpenAI test error:', error || data.error);
+        }
+      } else {
+        // Для других провайдеров пока оставляем базовую проверку
+        testResult = apiKey && apiKey.length > 10;
+      }
+      
+      const isValid = testResult;
       
       setProviders(prev => prev.map(p => 
         p.id === providerId 
@@ -213,6 +250,7 @@ const ApiKeys = () => {
         variant: isValid ? "default" : "destructive"
       });
     } catch (error) {
+      console.error('Test connection error:', error);
       setProviders(prev => prev.map(p => 
         p.id === providerId ? { ...p, status: 'invalid' } : p
       ));

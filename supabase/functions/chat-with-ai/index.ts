@@ -13,9 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, provider, model, agentPrompt, stream } = await req.json();
+    const { messages, provider, model, agentPrompt, stream, testMode } = await req.json();
     
-    console.log('Chat request received:', { provider, model, messagesCount: messages.length });
+    console.log('Chat request received:', { provider, model, messagesCount: messages.length, testMode });
 
     let response;
     let generatedText;
