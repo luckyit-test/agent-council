@@ -28,7 +28,7 @@ serve(async (req) => {
       const openaiKey = Deno.env.get('OPENAI_API_KEY');
       
       if (!openaiKey) {
-        console.log('OpenAI API key not found');
+        console.error('OpenAI API key not found');
         return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -48,7 +48,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model,
+          model: model || 'gpt-4o-mini',
           messages: openaiMessages,
           stream,
           max_tokens: 1000,
@@ -70,11 +70,12 @@ serve(async (req) => {
         const data = await response.json();
         generatedText = data.choices?.[0]?.message?.content || 'No response generated';
       }
+      
     } else if (provider === 'deepseek') {
       const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
       
       if (!deepseekKey) {
-        console.log('Deepseek API key not found');
+        console.error('Deepseek API key not found');
         return new Response(JSON.stringify({ error: 'Deepseek API key not configured' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -108,12 +109,6 @@ serve(async (req) => {
         throw new Error(`Deepseek API error: ${response.status} - ${errorData}`);
       }
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Perplexity API error:', response.status, errorData);
-        throw new Error(`Perplexity API error: ${response.status} - ${errorData}`);
-      }
-
       if (stream) {
         return new Response(response.body, {
           headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
@@ -122,6 +117,7 @@ serve(async (req) => {
         const data = await response.json();
         generatedText = data.choices?.[0]?.message?.content || 'No response generated';
       }
+      
     } else if (provider === 'perplexity') {
       const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
       
@@ -133,7 +129,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           error: 'Perplexity API key not configured in Supabase secrets'
         }), {
-          status: 500,
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -146,98 +142,17 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           error: 'Invalid Perplexity API key format - should start with pplx-'
         }), {
-          status: 500,
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Build messages array with agent prompt as system message
-      const apiMessages = [];
-      if (agentPrompt) {
-        apiMessages.push({ role: 'system', content: agentPrompt });
-      }
-      apiMessages.push(...messages);
+      const apiMessages = agentPrompt 
+        ? [{ role: 'system', content: agentPrompt }, ...messages]
+        : messages;
 
       console.log('Calling Perplexity API with model:', model);
       
-      // Handle streaming for Perplexity
-      if (stream) {
-        response = await fetch('https://api.perplexity.ai/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${perplexityApiKey}`,
-            'Content-Type': 'application/json',
-          },
-        body: JSON.stringify({
-          model: model === 'sonar-deep-research' ? 'sonar-deep-research' : 'llama-3.1-sonar-small-128k-online',
-          messages: apiMessages,
-          stream: true,
-          max_tokens: 4000
-        }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('=== PERPLEXITY API ERROR DETAILS ===');
-          console.error('Status:', response.status);
-          console.error('Status Text:', response.statusText);
-          console.error('Headers:', JSON.stringify([...response.headers.entries()]));
-          console.error('Error Response:', errorText);
-          console.error('Request URL:', 'https://api.perplexity.ai/chat/completions');
-          console.error('Request Headers sent:', JSON.stringify({
-            'Authorization': `Bearer ${perplexityApiKey.substring(0, 10)}...`,
-            'Content-Type': 'application/json'
-          }));
-          throw new Error(`Perplexity API error: ${response.status} ${errorText}`);
-        }
-
-        // Return streaming response
-        const stream = new ReadableStream({
-          async start(controller) {
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-
-            try {
-              while (true) {
-                const { done, value } = await reader?.read() || { done: true, value: undefined };
-                if (done) break;
-
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                  if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
-                    if (data === '[DONE]') {
-                      controller.close();
-                      return;
-                    }
-                    if (data.trim()) {
-                      // Forward Perplexity streaming data as-is
-                      controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
-                    }
-                  }
-                }
-              }
-            } catch (error) {
-              controller.error(error);
-            } finally {
-              reader?.releaseLock();
-            }
-          },
-        });
-
-        return new Response(stream, {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-          },
-        });
-      }
-
-      // Non-streaming request
       response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -247,104 +162,45 @@ serve(async (req) => {
         body: JSON.stringify({
           model: model === 'sonar-deep-research' ? 'sonar-deep-research' : 'llama-3.1-sonar-small-128k-online',
           messages: apiMessages,
+          stream,
           max_tokens: 4000
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Perplexity API error:', response.status, errorText);
-        throw new Error(`Perplexity API error: ${response.status} ${errorText}`);
+        console.error('=== PERPLEXITY API ERROR DETAILS ===');
+        console.error('Status:', response.status);
+        console.error('Status Text:', response.statusText);
+        console.error('Error Response:', errorText);
+        console.error('Request URL:', 'https://api.perplexity.ai/chat/completions');
+        console.error('Request Headers sent:', JSON.stringify({
+          'Authorization': `Bearer ${perplexityApiKey.substring(0, 10)}...`,
+          'Content-Type': 'application/json'
+        }));
+        throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log('Perplexity API response:', JSON.stringify(data, null, 2));
-      generatedText = data.choices[0].message.content;
-      
-    } else if (provider === 'openai') {
-      const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-      if (!openaiApiKey) {
-        throw new Error('OpenAI API key not configured');
-      }
-
-      // Build messages array with agent prompt as system message
-      const apiMessages = [];
-      if (agentPrompt) {
-        apiMessages.push({ role: 'system', content: agentPrompt });
-      }
-      apiMessages.push(...messages);
-
-      console.log('Calling OpenAI API with model:', model);
-
-      // Handle streaming for OpenAI
       if (stream) {
-        response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: model || 'gpt-4o-mini',
-            messages: apiMessages,
-            stream: true,
-            max_tokens: 2000,
-            temperature: 0.7,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('OpenAI API error:', response.status, errorText);
-          throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
-        }
-
-        // Return streaming response
         return new Response(response.body, {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
         });
+      } else {
+        const data = await response.json();
+        console.log('Perplexity API response:', JSON.stringify(data, null, 2));
+        generatedText = data.choices?.[0]?.message?.content || 'No response generated';
       }
-
-      // Non-streaming request
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: model || 'gpt-4o-mini',
-          messages: apiMessages,
-          max_tokens: 2000,
-          temperature: 0.7,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenAI API error:', response.status, errorText);
-        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
-      }
-
-      const data = await response.json();
-      generatedText = data.choices[0].message.content;
       
     } else {
-      throw new Error(`Unsupported AI provider: ${provider}`);
+      return new Response(JSON.stringify({ error: `Unsupported provider: ${provider}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('AI response generated successfully');
     
-    return new Response(JSON.stringify({ 
-      content: generatedText,
-      provider,
-      model
-    }), {
+    return new Response(JSON.stringify({ generatedText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

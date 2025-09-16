@@ -207,24 +207,37 @@ const ApiKeys = () => {
     ));
 
     try {
-      // Выполняем реальный тест API через edge функцию
+      // Выполняем реальный тест API через edge функцию с таймаутом
       let testResult = false;
+      
+      // Функция для создания промиса с таймаутом
+      const withTimeout = (promise: Promise<any>, timeoutMs: number) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs/1000}s`)), timeoutMs)
+          )
+        ]);
+      };
       
       if (providerId === 'openai') {
         console.log('Testing OpenAI connection...');
-        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
-          body: {
-            messages: [{ role: 'user', content: 'Test' }],
-            provider: 'openai',
-            model: 'gpt-4o-mini',
-            stream: false,
-            testMode: true
-          }
-        });
+        const { data, error } = await withTimeout(
+          supabase.functions.invoke('chat-with-ai', {
+            body: {
+              messages: [{ role: 'user', content: 'Test' }],
+              provider: 'openai',
+              model: 'gpt-4o-mini',
+              stream: false,
+              testMode: true
+            }
+          }),
+          15000
+        );
         
         if (error) {
           console.error('OpenAI test error:', error);
-          throw new Error(error.message || 'OpenAI API error');
+          throw new Error(error.message || 'OpenAI API connection failed');
         }
         
         if (data && data.error) {
@@ -236,19 +249,22 @@ const ApiKeys = () => {
         
       } else if (providerId === 'perplexity') {
         console.log('Testing Perplexity connection...');
-        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
-          body: {
-            messages: [{ role: 'user', content: 'Test' }],
-            provider: 'perplexity',
-            model: 'sonar-deep-research',
-            stream: false,
-            testMode: true
-          }
-        });
+        const { data, error } = await withTimeout(
+          supabase.functions.invoke('chat-with-ai', {
+            body: {
+              messages: [{ role: 'user', content: 'Test' }],
+              provider: 'perplexity',
+              model: 'sonar-deep-research',
+              stream: false,
+              testMode: true
+            }
+          }),
+          15000
+        );
         
         if (error) {
           console.error('Perplexity test error:', error);
-          throw new Error(error.message || 'Perplexity API error');
+          throw new Error(error.message || 'Perplexity API connection failed');
         }
         
         if (data && data.error) {
@@ -260,19 +276,22 @@ const ApiKeys = () => {
         
       } else if (providerId === 'deepseek') {
         console.log('Testing Deepseek connection...');
-        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
-          body: {
-            messages: [{ role: 'user', content: 'Test' }],
-            provider: 'deepseek',
-            model: 'deepseek-chat',
-            stream: false,
-            testMode: true
-          }
-        });
+        const { data, error } = await withTimeout(
+          supabase.functions.invoke('chat-with-ai', {
+            body: {
+              messages: [{ role: 'user', content: 'Test' }],
+              provider: 'deepseek',
+              model: 'deepseek-chat',
+              stream: false,
+              testMode: true
+            }
+          }),
+          15000
+        );
         
         if (error) {
           console.error('Deepseek test error:', error);
-          throw new Error(error.message || 'Deepseek API error');
+          throw new Error(error.message || 'Deepseek API connection failed');
         }
         
         if (data && data.error) {
