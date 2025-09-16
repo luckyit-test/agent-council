@@ -208,13 +208,13 @@ const ApiKeys = () => {
 
     try {
       // Выполняем реальный тест API через edge функцию
-      let testResult;
+      let testResult = false;
       
       if (providerId === 'openai') {
-        // Тестируем OpenAI через chat-with-ai функцию
+        console.log('Testing OpenAI connection...');
         const { data, error } = await supabase.functions.invoke('chat-with-ai', {
           body: {
-            messages: [{ role: 'user', content: 'Hello' }],
+            messages: [{ role: 'user', content: 'Test' }],
             provider: 'openai',
             model: 'gpt-4o-mini',
             stream: false,
@@ -222,15 +222,23 @@ const ApiKeys = () => {
           }
         });
         
-        testResult = !error && data && !data.error;
-        if (error || (data && data.error)) {
-          console.error('OpenAI test error:', error || data.error);
+        if (error) {
+          console.error('OpenAI test error:', error);
+          throw new Error(error.message || 'OpenAI API error');
         }
+        
+        if (data && data.error) {
+          console.error('OpenAI API returned error:', data.error);
+          throw new Error(data.error);
+        }
+        
+        testResult = data && data.generatedText && !data.error;
+        
       } else if (providerId === 'perplexity') {
-        // Тестируем Perplexity через chat-with-ai функцию
+        console.log('Testing Perplexity connection...');
         const { data, error } = await supabase.functions.invoke('chat-with-ai', {
           body: {
-            messages: [{ role: 'user', content: 'Hello' }],
+            messages: [{ role: 'user', content: 'Test' }],
             provider: 'perplexity',
             model: 'sonar-deep-research',
             stream: false,
@@ -238,21 +246,23 @@ const ApiKeys = () => {
           }
         });
         
-        testResult = !error && data && !data.error;
-        if (error || (data && data.error)) {
-          console.error('Perplexity test error:', error || data.error);
-          toast({
-            title: "Ошибка тестирования Perplexity",
-            description: error?.message || data?.error || "Неизвестная ошибка API",
-            variant: "destructive",
-            duration: 2000
-          });
+        if (error) {
+          console.error('Perplexity test error:', error);
+          throw new Error(error.message || 'Perplexity API error');
         }
+        
+        if (data && data.error) {
+          console.error('Perplexity API returned error:', data.error);
+          throw new Error(data.error);
+        }
+        
+        testResult = data && data.generatedText && !data.error;
+        
       } else if (providerId === 'deepseek') {
-        // Тестируем Deepseek через chat-with-ai функцию
+        console.log('Testing Deepseek connection...');
         const { data, error } = await supabase.functions.invoke('chat-with-ai', {
           body: {
-            messages: [{ role: 'user', content: 'Hello' }],
+            messages: [{ role: 'user', content: 'Test' }],
             provider: 'deepseek',
             model: 'deepseek-chat',
             stream: false,
@@ -260,10 +270,17 @@ const ApiKeys = () => {
           }
         });
         
-        testResult = !error && data && !data.error;
-        if (error || (data && data.error)) {
-          console.error('Deepseek test error:', error || data.error);
+        if (error) {
+          console.error('Deepseek test error:', error);
+          throw new Error(error.message || 'Deepseek API error');
         }
+        
+        if (data && data.error) {
+          console.error('Deepseek API returned error:', data.error);
+          throw new Error(data.error);
+        }
+        
+        testResult = data && data.generatedText && !data.error;
       }
       
       const isValid = testResult;
@@ -284,13 +301,15 @@ const ApiKeys = () => {
       });
     } catch (error) {
       console.error('Test connection error:', error);
+      
+      // При ошибке сбрасываем статус на "не настроено"
       setProviders(prev => prev.map(p => 
-        p.id === providerId ? { ...p, status: 'invalid' } : p
+        p.id === providerId ? { ...p, status: 'not-configured' } : p
       ));
       
       toast({
         title: "Ошибка тестирования",
-        description: "Произошла ошибка при тестировании подключения",
+        description: error instanceof Error ? error.message : "Произошла ошибка при тестировании подключения",
         variant: "destructive",
         duration: 2000
       });
@@ -308,7 +327,7 @@ const ApiKeys = () => {
       case 'testing':
         return <Badge className="bg-blue-100 text-blue-700">Тестирование...</Badge>;
       case 'valid':
-        return <Badge className="bg-primary/10 text-primary">Готов к использованию</Badge>;
+        return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400">Готов к использованию</Badge>;
       case 'invalid':
         return <Badge variant="destructive">Ошибка</Badge>;
     }
@@ -319,7 +338,7 @@ const ApiKeys = () => {
       case 'testing':
         return <Loader2 className="w-4 h-4 animate-spin" />;
       case 'valid':
-        return <Check className="w-4 h-4 text-primary" />;
+        return <Check className="w-4 h-4 text-green-600" />;
       case 'invalid':
         return <X className="w-4 h-4 text-red-600" />;
       default:

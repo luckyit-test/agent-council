@@ -56,6 +56,12 @@ serve(async (req) => {
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('OpenAI API error:', response.status, errorData);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+      }
+
       if (stream) {
         return new Response(response.body, {
           headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
@@ -95,6 +101,18 @@ serve(async (req) => {
           temperature: 0.7,
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Deepseek API error:', response.status, errorData);
+        throw new Error(`Deepseek API error: ${response.status} - ${errorData}`);
+      }
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Perplexity API error:', response.status, errorData);
+        throw new Error(`Perplexity API error: ${response.status} - ${errorData}`);
+      }
 
       if (stream) {
         return new Response(response.body, {
@@ -333,7 +351,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in chat-with-ai function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'An error occurred while processing your request'
+      error: error instanceof Error ? error.message : 'An error occurred while processing your request'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
