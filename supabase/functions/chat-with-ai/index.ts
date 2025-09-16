@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, provider, model, agentPrompt } = await req.json();
+    const { messages, provider, model, agentPrompt, stream } = await req.json();
     
     console.log('Chat request received:', { provider, model, messagesCount: messages.length });
 
@@ -35,6 +35,81 @@ serve(async (req) => {
 
       console.log('Calling Perplexity API with model:', model);
       
+      // Handle streaming for Perplexity
+      if (stream) {
+        response = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${perplexityApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: model || 'sonar',
+            messages: apiMessages,
+            stream: true,
+            temperature: 0.7,
+            top_p: 0.9,
+            max_tokens: 4000,
+            return_images: false,
+            return_related_questions: false,
+            search_recency_filter: 'month',
+            frequency_penalty: 1,
+            presence_penalty: 0
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Perplexity API error:', response.status, errorText);
+          throw new Error(`Perplexity API error: ${response.status} ${errorText}`);
+        }
+
+        // Return streaming response
+        const stream = new ReadableStream({
+          async start(controller) {
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            try {
+              while (true) {
+                const { done, value } = await reader?.read() || { done: true, value: undefined };
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') {
+                      controller.close();
+                      return;
+                    }
+                    if (data.trim()) {
+                      controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              controller.error(error);
+            } finally {
+              reader?.releaseLock();
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        });
+      }
+
+      // Non-streaming request
       response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -79,6 +154,41 @@ serve(async (req) => {
 
       console.log('Calling OpenAI API with model:', model);
 
+      // Handle streaming for OpenAI
+      if (stream) {
+        response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: model || 'gpt-4o-mini',
+            messages: apiMessages,
+            stream: true,
+            max_tokens: 2000,
+            temperature: 0.7,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenAI API error:', response.status, errorText);
+          throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+        }
+
+        // Return streaming response
+        return new Response(response.body, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        });
+      }
+
+      // Non-streaming request
       response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {

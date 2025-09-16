@@ -56,6 +56,8 @@ const Playground = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [generationStartTime, setGenerationStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
+  const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -164,6 +166,11 @@ const Playground = () => {
     setIsTyping(true);
     setGenerationStartTime(new Date());
     setElapsedTime(0);
+    setStreamingContent('');
+
+    // Set estimated time based on model
+    const isDeepResearch = selectedAgent.aiModel?.includes('deep-research');
+    setEstimatedTime(isDeepResearch ? 300 : 30); // 5 min for deep research, 30s for others
 
     try {
       // Determine which AI provider to use - use agent's configured provider or OpenAI as default
@@ -178,41 +185,124 @@ const Playground = () => {
       
       console.log('Calling supabase function...');
       
-      // Call the real AI API through edge function
-      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
-        body: {
-          messages: [
-            { role: 'user', content: inputMessage.trim() }
-          ],
-          provider: aiProvider,
-          model: aiModel,
-          agentPrompt: selectedAgent.prompt
+      // Check if streaming should be used
+      const useStreaming = aiProvider === 'perplexity' || aiProvider === 'openai';
+
+      if (useStreaming) {
+        // Streaming request
+        const response = await fetch(`https://awpessgdfvtbdcqnecfs.supabase.co/functions/v1/chat-with-ai`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cGVzc2dkZnZ0YmRjcW5lY2ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MDQyOTMsImV4cCI6MjA3MzA4MDI5M30.G7L-4WkWNi9cZdAsx3E7Y6Z-erxFLpw0woS7Z5mxuHw`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cGVzc2dkZnZ0YmRjcW5lY2ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MDQyOTMsImV4cCI6MjA3MzA4MDI5M30.G7L-4WkWNi9cZdAsx3E7Y6Z-erxFLpw0woS7Z5mxuHw',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [
+              { role: 'user', content: inputMessage.trim() }
+            ],
+            provider: aiProvider,
+            model: aiModel,
+            agentPrompt: selectedAgent.prompt,
+            stream: true,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      });
 
-      console.log('Supabase function response:', { data, error });
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
 
-      if (error) {
-        throw new Error(error.message || 'Failed to get response from AI');
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                  break;
+                }
+                if (data.trim()) {
+                  try {
+                    const parsed = JSON.parse(data);
+                    const content = parsed.choices?.[0]?.delta?.content;
+                    if (content) {
+                      fullContent += content;
+                      setStreamingContent(fullContent);
+                    }
+                  } catch (e) {
+                    // Ignore parse errors for partial data
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        const assistantMessage: Message = {
+          id: `msg_${Date.now()}_assistant`,
+          role: 'assistant',
+          content: fullContent,
+          timestamp: new Date(),
+          agentId: selectedAgent.id
+        };
+
+        const finalSession = {
+          ...updatedSession,
+          messages: [...updatedSession.messages, assistantMessage]
+        };
+
+        setCurrentSession(finalSession);
+        setChatSessions(prev => 
+          prev.map(s => s.id === currentSession.id ? finalSession : s)
+        );
+
+      } else {
+        // Non-streaming request (fallback)
+        const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+          body: {
+            messages: [
+              { role: 'user', content: inputMessage.trim() }
+            ],
+            provider: aiProvider,
+            model: aiModel,
+            agentPrompt: selectedAgent.prompt,
+            stream: false,
+          },
+        });
+
+        console.log('Supabase function response:', { data, error });
+
+        if (error) {
+          throw new Error(error.message || 'Failed to get response from AI');
+        }
+
+        const assistantMessage: Message = {
+          id: `msg_${Date.now()}_assistant`,
+          role: 'assistant',
+          content: data.content,
+          timestamp: new Date(),
+          agentId: selectedAgent.id
+        };
+
+        const finalSession = {
+          ...updatedSession,
+          messages: [...updatedSession.messages, assistantMessage]
+        };
+
+        setCurrentSession(finalSession);
+        setChatSessions(prev => 
+          prev.map(s => s.id === currentSession.id ? finalSession : s)
+        );
       }
-
-      const assistantMessage: Message = {
-        id: `msg_${Date.now()}_assistant`,
-        role: 'assistant',
-        content: data.content,
-        timestamp: new Date(),
-        agentId: selectedAgent.id
-      };
-
-      const finalSession = {
-        ...updatedSession,
-        messages: [...updatedSession.messages, assistantMessage]
-      };
-
-      setCurrentSession(finalSession);
-      setChatSessions(prev => 
-        prev.map(s => s.id === currentSession.id ? finalSession : s)
-      );
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -224,6 +314,8 @@ const Playground = () => {
     } finally {
       setIsGenerating(false);
       setIsTyping(false);
+      setStreamingContent('');
+      setEstimatedTime(null);
       setGenerationStartTime(null);
       setElapsedTime(0);
     }
@@ -549,7 +641,30 @@ const Playground = () => {
                   ))
                 )}
                 
-                {isTyping && (
+                {/* Streaming content */}
+                {isGenerating && streamingContent && (
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                    <div className="bg-muted p-3 rounded-lg max-w-[70%]">
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {streamingContent}
+                        </ReactMarkdown>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Генерируется...</span>
+                        <Timer className="w-3 h-3" />
+                        <span>{formatElapsedTime(elapsedTime)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Loading state without streaming */}
+                {isGenerating && !streamingContent && (
                   <div className="flex gap-3">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Bot className="w-4 h-4" />
@@ -557,17 +672,34 @@ const Playground = () => {
                     <div className="bg-muted p-3 rounded-lg">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         {getProviderIcon(selectedAgent.aiProvider)}
-                        <span>{selectedAgent.name} печатает...</span>
-                        {selectedAgent.aiProvider === 'perplexity' && (
-                          <div className="flex items-center gap-1 text-xs">
-                            <Timer className="w-3 h-3" />
-                            <span>{formatElapsedTime(elapsedTime)}</span>
-                            {selectedAgent.aiModel === 'sonar-deep-research' && elapsedTime < 180 && (
-                              <span className="text-orange-500">(до 3-8 мин для Deep Research)</span>
-                            )}
-                          </div>
-                        )}
+                        <span>
+                          {selectedAgent.aiModel?.includes('deep-research') 
+                            ? `Глубокое исследование...`
+                            : `${selectedAgent.name} обрабатывает запрос...`
+                          }
+                        </span>
+                        <Timer className="w-3 h-3" />
+                        <span>{formatElapsedTime(elapsedTime)}</span>
                       </div>
+                      
+                      {estimatedTime && (
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                            <span>Прогресс выполнения</span>
+                            <span>{Math.min(100, Math.round((elapsedTime / estimatedTime) * 100))}%</span>
+                          </div>
+                          <div className="w-full bg-background rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
+                              style={{ width: `${Math.min(100, (elapsedTime / estimatedTime) * 100)}%` }}
+                            />
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Ожидаемое время: ~{Math.floor(estimatedTime / 60)}:{((estimatedTime % 60).toString().padStart(2, '0'))} мин
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="flex gap-1">
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
