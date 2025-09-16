@@ -94,6 +94,15 @@ serve(async (req) => {
       try {
         const token = authHeader.replace('Bearer ', '');
         console.log('Token length:', token.length);
+        console.log('Token first 50 chars:', token.substring(0, 50));
+        
+        if (!token || token === 'null' || token === 'undefined') {
+          console.error('Invalid token received:', token);
+          return new Response(JSON.stringify({ error: 'Invalid authentication token' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         
         const payload = JSON.parse(atob(token.split('.')[1]));
         userId = payload.sub;
@@ -102,6 +111,10 @@ serve(async (req) => {
       } catch (e) {
         console.error('Error parsing JWT:', e);
         console.error('Auth header that failed:', authHeader?.substring(0, 50));
+        return new Response(JSON.stringify({ error: 'Failed to parse authentication token' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     } else {
       console.error('No authorization header found');
