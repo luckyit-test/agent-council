@@ -88,13 +88,32 @@ const ApiKeys = () => {
   });
   const { toast } = useToast();
 
-  // Инициализация статусов провайдеров
+  // Загрузка API ключей из базы данных
   useEffect(() => {
-    // Перплексити уже настроен в Supabase
-    setProviders(prev => prev.map(provider => ({
-      ...provider,
-      status: provider.id === 'perplexity' ? 'configured' : 'not-configured'
-    })));
+    const loadApiKeys = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_api_keys')
+          .select('provider')
+          .eq('user_id', '00000000-0000-0000-0000-000000000000'); // Временно
+
+        if (error) {
+          console.error('Error loading API keys:', error);
+          return;
+        }
+
+        // Обновляем статусы провайдеров на основе данных из БД
+        const configuredProviders = data?.map(row => row.provider) || [];
+        setProviders(prev => prev.map(provider => ({
+          ...provider,
+          status: configuredProviders.includes(provider.id) ? 'configured' : 'not-configured'
+        })));
+      } catch (error) {
+        console.error('Error loading API keys:', error);
+      }
+    };
+
+    loadApiKeys();
   }, []);
 
   const saveApiKey = async (providerId: string, key: string) => {
@@ -109,14 +128,14 @@ const ApiKeys = () => {
     }
 
     try {
-      // Сохраняем ключ в Supabase secrets
-      const secretName = `${providerId.toUpperCase()}_API_KEY`;
-      const { data, error } = await supabase.functions.invoke('update-secret', {
-        body: {
-          secretName,
-          secretValue: key.trim()
-        }
-      });
+      // Сохраняем ключ в базе данных Supabase
+      const { error } = await supabase
+        .from('user_api_keys')
+        .upsert({
+          provider: providerId,
+          api_key: key.trim(),
+          user_id: '00000000-0000-0000-0000-000000000000' // Временно, пока нет аутентификации
+        });
 
       if (error) {
         throw error;
@@ -134,19 +153,15 @@ const ApiKeys = () => {
 
       toast({
         title: "API ключ сохранён",
-        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} сохранён в Supabase. Можете протестировать подключение.`,
+        description: `Ключ для ${providers.find(p => p.id === providerId)?.name} сохранён в базе данных`,
         duration: 2000
       });
       
-      // Небольшая задержка для обновления секретов в Supabase
-      setTimeout(() => {
-        console.log(`Secret ${secretName} should be available now`);
-      }, 1000);
     } catch (error) {
       console.error('Save key error:', error);
       toast({
         title: "Ошибка сохранения",
-        description: "Не удалось сохранить ключ в Supabase",
+        description: "Не удалось сохранить ключ в базе данных",
         variant: "destructive",
         duration: 2000
       });
@@ -155,14 +170,12 @@ const ApiKeys = () => {
 
   const deleteApiKey = async (providerId: string) => {
     try {
-      // Удаляем ключ из Supabase secrets (устанавливаем пустое значение)
-      const secretName = `${providerId.toUpperCase()}_API_KEY`;
-      const { data, error } = await supabase.functions.invoke('update-secret', {
-        body: {
-          secretName,
-          secretValue: ''
-        }
-      });
+      // Удаляем ключ из базы данных
+      const { error } = await supabase
+        .from('user_api_keys')
+        .delete()
+        .eq('provider', providerId)
+        .eq('user_id', '00000000-0000-0000-0000-000000000000'); // Временно
 
       if (error) {
         throw error;
@@ -184,7 +197,7 @@ const ApiKeys = () => {
       console.error('Delete key error:', error);
       toast({
         title: "Ошибка удаления",
-        description: "Не удалось удалить ключ из Supabase",
+        description: "Не удалось удалить ключ из базы данных",
         variant: "destructive",
         duration: 2000
       });

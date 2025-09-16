@@ -1,10 +1,17 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Создаем Supabase клиент для получения API ключей из БД
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -19,28 +26,38 @@ serve(async (req) => {
     console.log('Provider:', provider);
     console.log('Model:', model);  
     console.log('Test Mode:', testMode);
-    console.log('Available env vars:', Object.keys(Deno.env.toObject()).filter(k => k.includes('API_KEY')));
-    
-    // Синхронизируем секреты между edge функциями, если они не найдены
-    const checkAndSyncSecret = (keyName: string) => {
-      let key = Deno.env.get(keyName);
-      console.log(`Checking secret ${keyName}: ${key ? 'FOUND' : 'NOT FOUND'}`);
-      if (key) {
-        console.log(`${keyName} length:`, key.length);
-        console.log(`${keyName} prefix:`, key.substring(0, Math.min(10, key.length)));
+
+    // Функция для получения API ключа из базы данных
+    const getApiKey = async (providerName: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('user_api_keys')
+          .select('api_key')
+          .eq('provider', providerName)
+          .eq('user_id', '00000000-0000-0000-0000-000000000000') // Временно, пока нет аутентификации
+          .single();
+
+        if (error || !data) {
+          console.error(`API key not found for ${providerName}:`, error);
+          return null;
+        }
+
+        console.log(`${providerName} API key found in database`);
+        return data.api_key;
+      } catch (err) {
+        console.error(`Error fetching API key for ${providerName}:`, err);
+        return null;
       }
-      return key;
     };
 
     let response;
     let generatedText;
 
     if (provider === 'openai') {
-      const openaiKey = checkAndSyncSecret('OPENAI_API_KEY');
+      const openaiKey = await getApiKey('openai');
       
       if (!openaiKey) {
-        console.error('OpenAI API key not found');
-        console.error('All env vars:', Object.keys(Deno.env.toObject()));
+        console.error('OpenAI API key not found in database');
         return new Response(JSON.stringify({ error: 'OpenAI API key not configured. Please add it through the API Keys page.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -85,11 +102,10 @@ serve(async (req) => {
       }
       
     } else if (provider === 'deepseek') {
-      const deepseekKey = checkAndSyncSecret('DEEPSEEK_API_KEY');
+      const deepseekKey = await getApiKey('deepseek');
       
       if (!deepseekKey) {
-        console.error('Deepseek API key not found');
-        console.error('All env vars:', Object.keys(Deno.env.toObject()));
+        console.error('Deepseek API key not found in database');
         return new Response(JSON.stringify({ error: 'Deepseek API key not configured. Please add it through the API Keys page.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -134,23 +150,17 @@ serve(async (req) => {
       }
       
     } else if (provider === 'perplexity') {
-      const perplexityApiKey = checkAndSyncSecret('PERPLEXITY_API_KEY');
-      
-      console.log('=== PERPLEXITY TEST START ===');
-      console.log('Environment variables available:', Object.keys(Deno.env.toObject()).filter(k => k.includes('PERPLEXITY')));
+      const perplexityApiKey = await getApiKey('perplexity');
       
       if (!perplexityApiKey) {
-        console.error('PERPLEXITY_API_KEY not found in environment');
-        return new Response(JSON.stringify({ 
-          error: 'Perplexity API key not configured in Supabase secrets'
-        }), {
+        console.error('Perplexity API key not found in database');
+        return new Response(JSON.stringify({ error: 'Perplexity API key not configured. Please add it through the API Keys page.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       
-      console.log('API key length:', perplexityApiKey?.length || 0);
-      console.log('API key prefix:', perplexityApiKey?.substring(0, 10) || 'N/A');
+      console.log('Perplexity key found, length:', perplexityApiKey.length);
       
       if (!perplexityApiKey.startsWith('pplx-')) {
         console.error('Invalid API key format - should start with pplx-');
@@ -188,11 +198,6 @@ serve(async (req) => {
         console.error('Status:', response.status);
         console.error('Status Text:', response.statusText);
         console.error('Error Response:', errorText);
-        console.error('Request URL:', 'https://api.perplexity.ai/chat/completions');
-        console.error('Request Headers sent:', JSON.stringify({
-          'Authorization': `Bearer ${perplexityApiKey.substring(0, 10)}...`,
-          'Content-Type': 'application/json'
-        }));
         throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
       }
 
@@ -202,7 +207,7 @@ serve(async (req) => {
         });
       } else {
         const data = await response.json();
-        console.log('Perplexity API response:', JSON.stringify(data, null, 2));
+        console.log('Perplexity API response received');
         generatedText = data.choices?.[0]?.message?.content || 'No response generated';
       }
       
