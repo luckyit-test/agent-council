@@ -149,10 +149,25 @@ const Playground = () => {
       agentId: selectedAgent.id
     };
 
-    // Update current session with user message
+    // Check if this is Deep Research model and add warning
+    const isDeepResearch = selectedAgent.aiModel?.includes('deep-research');
+    let messagesWithWarning = [userMessage];
+    
+    if (isDeepResearch) {
+      const warningMessage: Message = {
+        id: `msg_${Date.now()}_warning`,
+        role: 'assistant',
+        content: '🔍 **Deep Research начато** - это займет 3-8 минут для полного анализа...',
+        timestamp: new Date(),
+        agentId: selectedAgent.id
+      };
+      messagesWithWarning.push(warningMessage);
+    }
+
+    // Update current session with user message and warning if needed
     const updatedSession = {
       ...currentSession,
-      messages: [...currentSession.messages, userMessage]
+      messages: [...currentSession.messages, ...messagesWithWarning]
     };
     setCurrentSession(updatedSession);
 
@@ -167,10 +182,6 @@ const Playground = () => {
     setGenerationStartTime(new Date());
     setElapsedTime(0);
     setStreamingContent('');
-
-    // Set estimated time based on model
-    const isDeepResearch = selectedAgent.aiModel?.includes('deep-research');
-    setEstimatedTime(isDeepResearch ? 300 : 30); // 5 min for deep research, 30s for others
 
     try {
       // Determine which AI provider to use - use agent's configured provider or OpenAI as default
@@ -255,10 +266,21 @@ const Playground = () => {
           agentId: selectedAgent.id
         };
 
-        const finalSession = {
-          ...updatedSession,
-          messages: [...updatedSession.messages, assistantMessage]
-        };
+        let finalSession;
+        if (isDeepResearch) {
+          // Replace the warning message with the actual response
+          finalSession = {
+            ...updatedSession,
+            messages: updatedSession.messages.map(msg => 
+              msg.content?.includes('Deep Research начато') ? assistantMessage : msg
+            )
+          };
+        } else {
+          finalSession = {
+            ...updatedSession,
+            messages: [...updatedSession.messages, assistantMessage]
+          };
+        }
 
         setCurrentSession(finalSession);
         setChatSessions(prev => 
@@ -293,10 +315,21 @@ const Playground = () => {
           agentId: selectedAgent.id
         };
 
-        const finalSession = {
-          ...updatedSession,
-          messages: [...updatedSession.messages, assistantMessage]
-        };
+        let finalSession;
+        if (isDeepResearch) {
+          // Replace the warning message with the actual response
+          finalSession = {
+            ...updatedSession,
+            messages: updatedSession.messages.map(msg => 
+              msg.content?.includes('Deep Research начато') ? assistantMessage : msg
+            )
+          };
+        } else {
+          finalSession = {
+            ...updatedSession,
+            messages: [...updatedSession.messages, assistantMessage]
+          };
+        }
 
         setCurrentSession(finalSession);
         setChatSessions(prev => 
@@ -315,7 +348,6 @@ const Playground = () => {
       setIsGenerating(false);
       setIsTyping(false);
       setStreamingContent('');
-      setEstimatedTime(null);
       setGenerationStartTime(null);
       setElapsedTime(0);
     }
