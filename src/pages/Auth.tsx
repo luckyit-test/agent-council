@@ -137,12 +137,12 @@ const Auth = () => {
       });
 
       if (error) {
-        if (error.message.includes('User already registered')) {
+        if (error.message.includes('User already registered') || error.message.includes('already been registered')) {
           toast({
-            title: "Пользователь уже существует",
-            description: "Попробуйте войти в систему",
+            title: "Пользователь уже зарегистрирован",
+            description: "Если вы не получили письмо подтверждения, проверьте папку спам или войдите в систему",
             variant: "destructive",
-            duration: 3000
+            duration: 5000
           });
         } else {
           toast({
