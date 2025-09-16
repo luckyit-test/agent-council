@@ -218,7 +218,14 @@ const Playground = () => {
           },
           body: JSON.stringify({
             messages: [
-              // Add current user message first
+              // Add all previous messages from the session
+              ...currentSession.messages
+                .filter(msg => msg.content && typeof msg.content === 'string' && !msg.content.includes('Deep Research начато'))
+                .map(msg => ({
+                  role: msg.role,
+                  content: msg.content
+                })),
+              // Add current user message
               { role: 'user', content: inputMessage.trim() }
             ],
             provider: aiProvider,
@@ -325,7 +332,14 @@ const Playground = () => {
           },
           body: JSON.stringify({
             messages: [
-              // Add current user message first
+              // Add all previous messages from the session
+              ...currentSession.messages
+                .filter(msg => msg.content && typeof msg.content === 'string' && !msg.content.includes('Deep Research начато'))
+                .map(msg => ({
+                  role: msg.role,
+                  content: msg.content
+                })),
+              // Add current user message
               { role: 'user', content: inputMessage.trim() }
             ],
             provider: aiProvider,
