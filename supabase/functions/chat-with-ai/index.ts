@@ -26,8 +26,21 @@ serve(async (req) => {
 
   try {
     console.log('=== PARSING REQUEST BODY ===');
-    const requestBody = await req.json();
-    console.log('Request body keys:', Object.keys(requestBody));
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request body parsed successfully');
+      console.log('Request body keys:', Object.keys(requestBody));
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     const { 
       messages, 
@@ -46,6 +59,7 @@ serve(async (req) => {
     console.log('Test Mode:', testMode);
     console.log('Has agentPrompt:', !!agentPrompt);
     console.log('Capabilities:', capabilities);
+    console.log('Messages count:', messages?.length || 0);
 
     // Функция для получения API ключа из базы данных
     const getApiKey = async (providerName: string, userId?: string) => {
