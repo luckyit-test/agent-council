@@ -23,8 +23,10 @@ serve(async (req) => {
     if (provider === 'perplexity') {
       const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
       if (!perplexityApiKey) {
+        console.error('PERPLEXITY_API_KEY environment variable not found');
         throw new Error('Perplexity API key not configured');
       }
+      console.log('Perplexity API key found, length:', perplexityApiKey.length);
 
       // Build messages array with agent prompt as system message
       const apiMessages = [];
