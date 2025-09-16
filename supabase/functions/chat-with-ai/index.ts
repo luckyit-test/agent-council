@@ -149,7 +149,7 @@ serve(async (req) => {
     }
 
     let response;
-    let generatedText;
+    let generatedText = '';
 
     if (provider === 'openai') {
       const openaiKey = await getApiKey('openai', userId);
