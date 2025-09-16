@@ -75,21 +75,25 @@ serve(async (req) => {
     
     console.log('=== AUTH HEADER DEBUG ===');
     console.log('Auth header exists:', !!authHeader);
-    console.log('Auth header value:', authHeader?.substring(0, 50) + '...');
     
     if (authHeader) {
       try {
         const token = authHeader.replace('Bearer ', '');
         console.log('Token length:', token.length);
-        console.log('Token parts:', token.split('.').length);
+        console.log('Token starts with:', token.substring(0, 20));
+        
+        // Проверяем что это не anon ключ
+        if (token.startsWith('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cGVzc2dkZnZ0YmRjcW5lY2ZzIiwicm9sZSI6ImFub24i')) {
+          console.error('Received anon key instead of user JWT token');
+          throw new Error('Invalid authentication - anon key detected');
+        }
         
         const payload = JSON.parse(atob(token.split('.')[1]));
         userId = payload.sub;
-        console.log('Full JWT payload:', payload);
         console.log('User ID from JWT:', userId);
       } catch (e) {
         console.error('Error parsing JWT:', e);
-        console.error('Auth header that failed:', authHeader);
+        console.error('Auth header that failed:', authHeader?.substring(0, 50));
       }
     } else {
       console.error('No authorization header found');
