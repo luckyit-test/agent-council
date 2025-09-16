@@ -26,9 +26,20 @@ serve(async (req) => {
         console.error('PERPLEXITY_API_KEY environment variable not found');
         throw new Error('Perplexity API key not configured');
       }
-      console.log('Perplexity API key found, length:', perplexityApiKey.length);
-      console.log('Perplexity API key prefix:', perplexityApiKey.substring(0, 8) + '...');
-      console.log('Testing with URL: https://api.perplexity.ai/chat/completions');
+      
+      // Подробная диагностика API ключа
+      console.log('=== PERPLEXITY API DIAGNOSTICS ===');
+      console.log('API key length:', perplexityApiKey.length);
+      console.log('API key starts with:', perplexityApiKey.substring(0, 5));
+      console.log('API key first 10 chars:', perplexityApiKey.substring(0, 10) + '...');
+      
+      // Проверяем формат ключа
+      if (!perplexityApiKey.startsWith('pplx-')) {
+        console.error('ERROR: Perplexity API key should start with "pplx-"');
+        console.log('Current key format seems incorrect');
+      } else {
+        console.log('✓ API key format appears correct (starts with pplx-)');
+      }
 
       // Build messages array with agent prompt as system message
       const apiMessages = [];
@@ -57,7 +68,16 @@ serve(async (req) => {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Perplexity API error:', response.status, errorText);
+          console.error('=== PERPLEXITY API ERROR DETAILS ===');
+          console.error('Status:', response.status);
+          console.error('Status Text:', response.statusText);
+          console.error('Headers:', JSON.stringify([...response.headers.entries()]));
+          console.error('Error Response:', errorText);
+          console.error('Request URL:', 'https://api.perplexity.ai/chat/completions');
+          console.error('Request Headers sent:', JSON.stringify({
+            'Authorization': `Bearer ${perplexityApiKey.substring(0, 10)}...`,
+            'Content-Type': 'application/json'
+          }));
           throw new Error(`Perplexity API error: ${response.status} ${errorText}`);
         }
 
