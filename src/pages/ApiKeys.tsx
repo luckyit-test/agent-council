@@ -31,6 +31,7 @@ import {
   Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ApiProvider {
@@ -78,6 +79,7 @@ const API_PROVIDERS: ApiProvider[] = [
 ];
 
 const ApiKeys = () => {
+  const { user } = useAuth();
   const [providers, setProviders] = useState<ApiProvider[]>(API_PROVIDERS);
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
@@ -91,11 +93,13 @@ const ApiKeys = () => {
   // Загрузка API ключей из базы данных
   useEffect(() => {
     const loadApiKeys = async () => {
+      if (!user) return;
+      
       try {
         const { data, error } = await supabase
           .from('user_api_keys')
           .select('provider')
-          .eq('user_id', '00000000-0000-0000-0000-000000000000'); // Временно
+          .eq('user_id', user.id);
 
         if (error) {
           console.error('Error loading API keys:', error);
@@ -114,13 +118,23 @@ const ApiKeys = () => {
     };
 
     loadApiKeys();
-  }, []);
+  }, [user]);
 
   const saveApiKey = async (providerId: string, key: string) => {
     if (!key.trim()) {
       toast({
         title: "Ошибка",
         description: "Введите API ключ для сохранения",
+        variant: "destructive",
+        duration: 2000
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Ошибка",
+        description: "Необходимо войти в систему",
         variant: "destructive",
         duration: 2000
       });
@@ -134,7 +148,7 @@ const ApiKeys = () => {
         .upsert({
           provider: providerId,
           api_key: key.trim(),
-          user_id: '00000000-0000-0000-0000-000000000000' // Временно, пока нет аутентификации
+          user_id: user.id
         });
 
       if (error) {
@@ -169,13 +183,23 @@ const ApiKeys = () => {
   };
 
   const deleteApiKey = async (providerId: string) => {
+    if (!user) {
+      toast({
+        title: "Ошибка",
+        description: "Необходимо войти в систему",
+        variant: "destructive",
+        duration: 2000
+      });
+      return;
+    }
+    
     try {
       // Удаляем ключ из базы данных
       const { error } = await supabase
         .from('user_api_keys')
         .delete()
         .eq('provider', providerId)
-        .eq('user_id', '00000000-0000-0000-0000-000000000000'); // Временно
+        .eq('user_id', user.id);
 
       if (error) {
         throw error;

@@ -1,13 +1,36 @@
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
-import { Brain } from "lucide-react";
+import { Brain, LogOut } from "lucide-react";
 import { CreateTaskDialog } from "./CreateTaskDialog";
+import { Button } from "./ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export const Layout = ({ children }: LayoutProps) => {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Выход выполнен",
+        description: "До свидания!",
+        duration: 2000
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось выйти из системы",
+        variant: "destructive",
+        duration: 2000
+      });
+    }
+  };
   return (
     <div className="min-h-screen flex w-full bg-background">
       <AppSidebar />
@@ -27,6 +50,17 @@ export const Layout = ({ children }: LayoutProps) => {
               
               <div className="flex items-center gap-2">
                 <CreateTaskDialog />
+                {user && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Выйти
+                  </Button>
+                )}
               </div>
             </div>
           </div>

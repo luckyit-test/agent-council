@@ -4,36 +4,66 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import MyAgents from "./pages/MyAgents";
 import Marketplace from "./pages/Marketplace";
 import ApiKeys from "./pages/ApiKeys";
 import Playground from "./pages/Playground";
 import Settings from "./pages/Settings";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/agents" element={<Navigate to="/my-agents" replace />} />
-          <Route path="/bots" element={<Navigate to="/marketplace" replace />} />
-          <Route path="/my-agents" element={<MyAgents />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/api-keys" element={<ApiKeys />} />
-          <Route path="/playground" element={<Playground />} />
-          <Route path="/settings" element={<Settings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/agents" element={<Navigate to="/my-agents" replace />} />
+            <Route path="/bots" element={<Navigate to="/marketplace" replace />} />
+            <Route path="/my-agents" element={
+              <ProtectedRoute>
+                <MyAgents />
+              </ProtectedRoute>
+            } />
+            <Route path="/marketplace" element={
+              <ProtectedRoute>
+                <Marketplace />
+              </ProtectedRoute>
+            } />
+            <Route path="/api-keys" element={
+              <ProtectedRoute>
+                <ApiKeys />
+              </ProtectedRoute>
+            } />
+            <Route path="/playground" element={
+              <ProtectedRoute>
+                <Playground />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

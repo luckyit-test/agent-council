@@ -28,13 +28,16 @@ serve(async (req) => {
     console.log('Test Mode:', testMode);
 
     // Функция для получения API ключа из базы данных
-    const getApiKey = async (providerName: string) => {
+    const getApiKey = async (providerName: string, userId?: string) => {
       try {
+        // Если userId не передан, используем auth.uid() для получения текущего пользователя
+        const userIdToUse = userId || '00000000-0000-0000-0000-000000000000'; // fallback для тестирования
+        
         const { data, error } = await supabase
           .from('user_api_keys')
           .select('api_key')
           .eq('provider', providerName)
-          .eq('user_id', '00000000-0000-0000-0000-000000000000') // Временно, пока нет аутентификации
+          .eq('user_id', userIdToUse)
           .single();
 
         if (error || !data) {
