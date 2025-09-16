@@ -25,13 +25,27 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Parsing request body...');
-    const { messages, provider, model, agentPrompt, stream, testMode } = await req.json();
+    console.log('=== PARSING REQUEST BODY ===');
+    const requestBody = await req.json();
+    console.log('Request body keys:', Object.keys(requestBody));
+    
+    const { 
+      messages, 
+      provider = 'openai', 
+      model = 'gpt-4o-mini', 
+      stream = false, 
+      agentPrompt,
+      capabilities = {},
+      testMode
+    } = requestBody;
     
     console.log('=== CHAT REQUEST START ===');
     console.log('Provider:', provider);
-    console.log('Model:', model);  
+    console.log('Model:', model);
+    console.log('Stream:', stream);
     console.log('Test Mode:', testMode);
+    console.log('Has agentPrompt:', !!agentPrompt);
+    console.log('Capabilities:', capabilities);
 
     // Функция для получения API ключа из базы данных
     const getApiKey = async (providerName: string, userId?: string) => {
@@ -360,9 +374,16 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in chat-with-ai function:', error);
+    console.error('=== CRITICAL ERROR IN CHAT-WITH-AI ===');
+    console.error('Error type:', error?.constructor?.name);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
+    console.error('========================================');
+    
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'An error occurred while processing your request'
+      error: error instanceof Error ? error.message : 'An error occurred while processing your request',
+      errorType: error?.constructor?.name || 'Unknown',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
