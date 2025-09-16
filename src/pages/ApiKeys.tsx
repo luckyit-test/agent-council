@@ -149,6 +149,8 @@ const ApiKeys = () => {
           provider: providerId,
           api_key: key.trim(),
           user_id: user.id
+        }, {
+          onConflict: 'user_id,provider'
         });
 
       if (error) {
