@@ -332,7 +332,7 @@ const Playground = () => {
         const assistantMessage: Message = {
           id: `msg_${Date.now()}_assistant`,
           role: 'assistant',
-          content: data.content,
+          content: data.generatedText,
           timestamp: new Date(),
           agentId: selectedAgent.id
         };
