@@ -29,24 +29,8 @@ serve(async (req) => {
 
     // Функция для получения API ключа из базы данных
     const getApiKey = async (providerName: string, userId?: string) => {
-      try {
-        // Получаем user ID из JWT токена
-        const authHeader = req.headers.get('authorization');
-        let userIdToUse = userId;
-        
-        if (!userIdToUse && authHeader) {
-          // Парсим JWT токен для получения user ID
-          try {
-            const token = authHeader.replace('Bearer ', '');
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            userIdToUse = payload.sub;
-            console.log('User ID from JWT:', userIdToUse);
-          } catch (e) {
-            console.error('Error parsing JWT:', e);
-          }
-        }
-        
-        if (!userIdToUse) {
+      try {        
+        if (!userId) {
           console.error('No user ID available');
           return null;
         }
@@ -55,8 +39,21 @@ serve(async (req) => {
           .from('user_api_keys')
           .select('api_key')
           .eq('provider', providerName)
-          .eq('user_id', userIdToUse)
+          .eq('user_id', userId)
           .single();
+
+        if (error || !data) {
+          console.error(`API key not found for ${providerName}:`, error);
+          return null;
+        }
+
+        console.log(`${providerName} API key found in database`);
+        return data.api_key;
+      } catch (err) {
+        console.error(`Error fetching API key for ${providerName}:`, err);
+        return null;
+      }
+    };
 
         if (error || !data) {
           console.error(`API key not found for ${providerName}:`, error);
@@ -73,9 +70,24 @@ serve(async (req) => {
 
     let response;
     let generatedText;
+    
+    // Получаем user ID из JWT токена один раз
+    const authHeader = req.headers.get('authorization');
+    let userId = null;
+    
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.sub;
+        console.log('User ID from JWT:', userId);
+      } catch (e) {
+        console.error('Error parsing JWT:', e);
+      }
+    }
 
     if (provider === 'openai') {
-      const openaiKey = await getApiKey('openai');
+      const openaiKey = await getApiKey('openai', userId);
       
       if (!openaiKey) {
         console.error('OpenAI API key not found in database');
@@ -123,7 +135,7 @@ serve(async (req) => {
       }
       
     } else if (provider === 'deepseek') {
-      const deepseekKey = await getApiKey('deepseek');
+      const deepseekKey = await getApiKey('deepseek', userId);
       
       if (!deepseekKey) {
         console.error('Deepseek API key not found in database');
@@ -171,7 +183,7 @@ serve(async (req) => {
       }
       
     } else if (provider === 'perplexity') {
-      const perplexityApiKey = await getApiKey('perplexity');
+      const perplexityApiKey = await getApiKey('perplexity', userId);
       
       if (!perplexityApiKey) {
         console.error('Perplexity API key not found in database');
