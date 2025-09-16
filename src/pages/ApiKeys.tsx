@@ -271,17 +271,30 @@ const ApiKeys = () => {
 
   const testConnection = async (providerId: string) => {
     const provider = providers.find(p => p.id === providerId);
-    const apiKey = apiKeys[providerId];
     
-    if (!provider || (!apiKey && providerId !== 'perplexity')) {
+    // Проверяем что провайдер найден и настроен
+    if (!provider) {
       toast({
         title: "Ошибка",
-        description: "API ключ не найден",
+        description: "Провайдер не найден",
         variant: "destructive",
         duration: 2000
       });
       return;
     }
+
+    // Для тестирования достаточно что статус "configured" - ключ есть в базе
+    if (provider.status !== 'configured' && provider.status !== 'valid' && provider.status !== 'invalid') {
+      toast({
+        title: "Ошибка", 
+        description: "Сначала сохраните API ключ",
+        variant: "destructive",
+        duration: 2000
+      });
+      return;
+    }
+
+    setTestingProvider(providerId);
 
     setTestingProvider(providerId);
     setProviders(prev => prev.map(p => 
