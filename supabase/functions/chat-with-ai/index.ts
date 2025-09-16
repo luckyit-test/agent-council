@@ -38,15 +38,7 @@ serve(async (req) => {
           return null;
         }
         
-        // Проверяем все ключи пользователя для отладки
-        const { data: allKeys, error: allKeysError } = await supabase
-          .from('user_api_keys')
-          .select('*')
-          .eq('user_id', userId);
-        
-        console.log('All user keys:', allKeys);
-        console.log('All keys error:', allKeysError);
-        
+        // Используем service role для обхода RLS, но с проверкой user_id
         const { data, error } = await supabase
           .from('user_api_keys')
           .select('api_key')
@@ -56,8 +48,13 @@ serve(async (req) => {
 
         console.log(`Query result for ${providerName}:`, { data, error });
 
-        if (error || !data) {
-          console.error(`API key not found for ${providerName}:`, error);
+        if (error) {
+          console.error(`API key query error for ${providerName}:`, error);
+          return null;
+        }
+
+        if (!data) {
+          console.error(`No API key found for ${providerName} and user ${userId}`);
           return null;
         }
 
