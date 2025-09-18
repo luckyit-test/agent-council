@@ -676,109 +676,375 @@ const Playground = () => {
                   currentSession.messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {message.role === 'assistant' && (
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                          <Bot className="w-4 h-4" />
-                        </div>
+                      className={cn(
+                        "flex gap-4 group relative animate-fade-in",
+                        message.role === 'user' ? "justify-end" : "justify-start"
                       )}
-                      
-                      <div className={`max-w-[70%] ${message.role === 'user' ? 'order-2' : ''}`}>
-                        <div
-                          className={`p-3 rounded-lg ${
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground ml-auto'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {message.role === 'user' ? (
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                          ) : (
-                            <div className="prose prose-sm max-w-none dark:prose-invert">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {message.content}
-                              </ReactMarkdown>
+                    >
+                      {/* Message Container */}
+                      <div className={cn(
+                        "relative max-w-[80%] rounded-2xl p-5 shadow-sm border backdrop-blur-sm transition-all duration-300 hover:shadow-md",
+                        message.role === 'user' 
+                          ? "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 text-foreground" 
+                          : "bg-gradient-to-br from-card to-card/80 border-border/50"
+                      )}>
+                        
+                        {/* Avatar and Header */}
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm",
+                            message.role === 'user' 
+                              ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground" 
+                              : "bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground"
+                          )}>
+                            {message.role === 'user' ? (
+                              <User className="w-4 h-4" />
+                            ) : (
+                              <Bot className="w-4 h-4" />
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-foreground">
+                                {message.role === 'user' ? 'Вы' : selectedAgent?.name || 'AI Assistant'}
+                              </span>
+                              <span className="text-xs text-muted-foreground/70">
+                                {formatTime(message.timestamp)}
+                              </span>
                             </div>
-                          )}
+                            
+                            {message.role === 'assistant' && selectedAgent && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Badge variant="outline" className="text-xs gap-1.5 bg-background/50 backdrop-blur-sm">
+                                  {getProviderIcon(selectedAgent.aiProvider)}
+                                  {selectedAgent.aiModel || selectedAgent.aiProvider || 'AI'}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         
-                        <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}>
-                          <span>{formatTime(message.timestamp)}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-1"
-                            onClick={() => copyMessage(message.content)}
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
+                        {/* Message Content */}
+                        <div className="prose prose-sm max-w-none">
+                          {message.role === 'user' ? (
+                            <p className="text-foreground leading-relaxed whitespace-pre-wrap mb-0">
+                              {message.content}
+                            </p>
+                          ) : (
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                code: ({ node, inline, className, children, ...props }: any) => {
+                                  if (inline) {
+                                    return (
+                                      <code className="px-2 py-1 rounded-md bg-muted/80 text-sm font-mono text-foreground border border-border/50" {...props}>
+                                        {children}
+                                      </code>
+                                    );
+                                  }
+                                  return (
+                                    <div className="my-4">
+                                      <pre className="bg-gradient-to-br from-muted to-muted/80 p-4 rounded-xl overflow-x-auto border border-border/50 shadow-sm">
+                                        <code className="text-sm font-mono text-foreground leading-relaxed" {...props}>
+                                          {children}
+                                        </code>
+                                      </pre>
+                                    </div>
+                                  );
+                                },
+                                blockquote: ({ children }) => (
+                                  <blockquote className="border-l-4 border-primary/50 pl-4 py-2 my-4 bg-primary/5 rounded-r-lg italic text-muted-foreground">
+                                    {children}
+                                  </blockquote>
+                                ),
+                                h1: ({ children }) => (
+                                  <h1 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 mt-6 first:mt-0">
+                                    {children}
+                                  </h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 className="text-lg font-semibold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 mt-5 first:mt-0">
+                                    {children}
+                                  </h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3 className="text-base font-medium text-foreground mb-2 mt-4 first:mt-0">
+                                    {children}
+                                  </h3>
+                                ),
+                                p: ({ children }) => (
+                                  <p className="text-foreground leading-relaxed mb-3 last:mb-0">
+                                    {children}
+                                  </p>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul className="list-none space-y-2 text-foreground my-3">
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="list-decimal list-inside space-y-2 text-foreground my-3">
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li className="text-foreground flex items-start gap-2">
+                                    <Circle className="w-1.5 h-1.5 mt-2 shrink-0 fill-primary text-primary" />
+                                    <span className="flex-1">{children}</span>
+                                  </li>
+                                ),
+                                table: ({ children }) => (
+                                  <div className="overflow-x-auto my-4">
+                                    <table className="min-w-full border border-border/50 rounded-lg shadow-sm overflow-hidden">
+                                      {children}
+                                    </table>
+                                  </div>
+                                ),
+                                th: ({ children }) => (
+                                  <th className="border-r border-border/50 px-4 py-3 bg-gradient-to-r from-muted to-muted/80 font-semibold text-left text-foreground">
+                                    {children}
+                                  </th>
+                                ),
+                                td: ({ children }) => (
+                                  <td className="border-r border-border/50 border-t border-border/30 px-4 py-3 text-foreground">
+                                    {children}
+                                  </td>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong className="font-semibold text-foreground">
+                                    {children}
+                                  </strong>
+                                ),
+                                em: ({ children }) => (
+                                  <em className="italic text-muted-foreground">
+                                    {children}
+                                  </em>
+                                ),
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          )}
                         </div>
+
+                        {/* Action Buttons - показываем только для сообщений ассистента при ховере */}
+                        {message.role === 'assistant' && (
+                          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyMessage(message.content)}
+                              className="h-8 px-3 text-xs bg-background/50 hover:bg-background border border-border/50"
+                            >
+                              <Copy className="w-3 h-3 mr-1.5" />
+                              Копировать
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      
-                      {message.role === 'user' && (
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                          <User className="w-4 h-4" />
-                        </div>
-                      )}
                     </div>
                   ))
                 )}
                 
-                {/* Streaming content */}
+                {/* Streaming content - красивый стриминг */}
                 {isGenerating && streamingContent && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg max-w-[70%]">
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <div className="flex gap-4 justify-start animate-fade-in">
+                    <div className="relative max-w-[80%] rounded-2xl p-5 shadow-md border backdrop-blur-sm bg-gradient-to-br from-card to-card/80 border-border/50">
+                      
+                      {/* Streaming Header */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground relative">
+                          <Bot className="w-4 h-4" />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-transparent animate-pulse" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">
+                              {selectedAgent?.name || 'AI Assistant'}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                              <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                              <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                              <span className="text-xs text-primary font-medium ml-1">Генерирую...</span>
+                            </div>
+                          </div>
+                          
+                          {selectedAgent && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Badge variant="outline" className="text-xs gap-1.5 bg-background/50 backdrop-blur-sm border-primary/30">
+                                {getProviderIcon(selectedAgent.aiProvider)}
+                                {selectedAgent.aiModel || selectedAgent.aiProvider || 'AI'}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Streaming Content */}
+                      <div className="prose prose-sm max-w-none">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code: ({ node, inline, className, children, ...props }: any) => {
+                              if (inline) {
+                                return (
+                                  <code className="px-2 py-1 rounded-md bg-muted/80 text-sm font-mono text-foreground border border-border/50" {...props}>
+                                    {children}
+                                  </code>
+                                );
+                              }
+                              return (
+                                <div className="my-4">
+                                  <pre className="bg-gradient-to-br from-muted to-muted/80 p-4 rounded-xl overflow-x-auto border border-border/50 shadow-sm">
+                                    <code className="text-sm font-mono text-foreground leading-relaxed" {...props}>
+                                      {children}
+                                    </code>
+                                  </pre>
+                                </div>
+                              );
+                            },
+                            blockquote: ({ children }) => (
+                              <blockquote className="border-l-4 border-primary/50 pl-4 py-2 my-4 bg-primary/5 rounded-r-lg italic text-muted-foreground">
+                                {children}
+                              </blockquote>
+                            ),
+                            h1: ({ children }) => (
+                              <h1 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 mt-6 first:mt-0">
+                                {children}
+                              </h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2 className="text-lg font-semibold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 mt-5 first:mt-0">
+                                {children}
+                              </h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3 className="text-base font-medium text-foreground mb-2 mt-4 first:mt-0">
+                                {children}
+                              </h3>
+                            ),
+                            p: ({ children }) => (
+                              <p className="text-foreground leading-relaxed mb-3 last:mb-0">
+                                {children}
+                              </p>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="list-none space-y-2 text-foreground my-3">
+                                {children}
+                              </ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal list-inside space-y-2 text-foreground my-3">
+                                {children}
+                              </ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="text-foreground flex items-start gap-2">
+                                <Circle className="w-1.5 h-1.5 mt-2 shrink-0 fill-primary text-primary" />
+                                <span className="flex-1">{children}</span>
+                              </li>
+                            ),
+                            table: ({ children }) => (
+                              <div className="overflow-x-auto my-4">
+                                <table className="min-w-full border border-border/50 rounded-lg shadow-sm overflow-hidden">
+                                  {children}
+                                </table>
+                              </div>
+                            ),
+                            th: ({ children }) => (
+                              <th className="border-r border-border/50 px-4 py-3 bg-gradient-to-r from-muted to-muted/80 font-semibold text-left text-foreground">
+                                {children}
+                              </th>
+                            ),
+                            td: ({ children }) => (
+                              <td className="border-r border-border/50 border-t border-border/30 px-4 py-3 text-foreground">
+                                {children}
+                              </td>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold text-foreground">
+                                {children}
+                              </strong>
+                            ),
+                            em: ({ children }) => (
+                              <em className="italic text-muted-foreground">
+                                {children}
+                              </em>
+                            ),
+                          }}
+                        >
                           {streamingContent}
                         </ReactMarkdown>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span>Генерируется...</span>
-                        <Timer className="w-3 h-3" />
-                        <span>{formatElapsedTime(elapsedTime)}</span>
+                        
+                        {/* Анимированный курсор */}
+                        <span className="inline-flex items-center">
+                          <span className="w-2 h-5 bg-gradient-to-t from-primary to-primary/70 animate-pulse ml-1 rounded-sm shadow-sm" />
+                        </span>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                {/* Loading state without streaming */}
+                {/* Loading state without streaming - улучшенная анимация */}
                 {isGenerating && !streamingContent && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        {getProviderIcon(selectedAgent.aiProvider)}
-                        <span>
-                          {selectedAgent.aiModel?.includes('deep-research') 
-                            ? `Глубокое исследование...`
-                            : `${selectedAgent.name} обрабатывает запрос...`
-                          }
-                        </span>
-                        <Timer className="w-3 h-3" />
-                        <span>{formatElapsedTime(elapsedTime)}</span>
+                  <div className="flex gap-4 justify-start animate-fade-in">
+                    <div className="relative max-w-[80%] rounded-2xl p-5 shadow-md border backdrop-blur-sm bg-gradient-to-br from-card to-card/80 border-border/50">
+                      
+                      {/* Loading Header */}
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground relative">
+                          <Bot className="w-4 h-4" />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-transparent animate-pulse" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">
+                              {selectedAgent?.name || 'AI Assistant'}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {getProviderIcon(selectedAgent?.aiProvider)}
+                              <span className="text-xs text-primary font-medium">
+                                {selectedAgent?.aiModel?.includes('deep-research') 
+                                  ? 'Глубокое исследование...'
+                                  : 'Обрабатывает запрос...'
+                                }
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {selectedAgent && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Badge variant="outline" className="text-xs gap-1.5 bg-background/50 backdrop-blur-sm border-primary/30">
+                                {getProviderIcon(selectedAgent.aiProvider)}
+                                {selectedAgent.aiModel || selectedAgent.aiProvider || 'AI'}
+                              </Badge>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
+                                <Timer className="w-3 h-3" />
+                                <span>{formatElapsedTime(elapsedTime)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
+                      {/* Progress Bar для Deep Research */}
                       {estimatedTime && (
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
                             <span>Прогресс выполнения</span>
                             <span>{Math.min(100, Math.round((elapsedTime / estimatedTime) * 100))}%</span>
                           </div>
-                          <div className="w-full bg-background rounded-full h-2">
+                          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                             <div 
-                              className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
+                              className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-500 ease-out relative"
                               style={{ width: `${Math.min(100, (elapsedTime / estimatedTime) * 100)}%` }}
-                            />
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                            </div>
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
                             Ожидаемое время: ~{Math.floor(estimatedTime / 60)}:{((estimatedTime % 60).toString().padStart(2, '0'))} мин
@@ -786,10 +1052,14 @@ const Playground = () => {
                         </div>
                       )}
                       
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      {/* Анимированные точки */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Думаю</span>
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
                       </div>
                     </div>
                   </div>
