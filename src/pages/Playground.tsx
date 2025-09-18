@@ -459,393 +459,377 @@ const Playground = () => {
     <Layout>
       <div className="max-w-7xl mx-auto h-[calc(100vh-120px)] flex flex-col">
         
-        {/* Compact Header with Smart Agent Selector */}
-        <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-lg border">
-          <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
-            <MessageSquare className="w-5 h-5 text-primary shrink-0" />
-            <h1 className="text-lg font-semibold shrink-0">Playground</h1>
-            
-            {/* Smart Agent Selector - занимает всё доступное место */}
-            <div className="flex-1 min-w-0">
-              <SmartAgentSelector
-                agents={userAgents}
-                selectedAgent={selectedAgent}
-                onSelectAgent={(agent) => startNewChat(agent)}
-              />
+        {/* Premium Header with Glassmorphism */}
+        <div className="relative mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-background border border-border/50 backdrop-blur-sm shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent rounded-2xl opacity-50" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-6 min-w-0 flex-1 mr-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-primary text-primary-foreground shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                  <Brain className="w-6 h-6" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    AI Playground
+                  </h1>
+                  <p className="text-sm text-muted-foreground">Интеллектуальное взаимодействие с агентами</p>
+                </div>
+              </div>
+              
+              {/* Enhanced Agent Selector */}
+              <div className="flex-1 min-w-0 max-w-md">
+                <SmartAgentSelector
+                  agents={userAgents}
+                  selectedAgent={selectedAgent}
+                  onSelectAgent={(agent) => startNewChat(agent)}
+                />
+              </div>
             </div>
-          </div>
           
-          {/* Right Actions */}
-          <div className="flex items-center gap-2">
-            {/* Chat History - показываем всегда, но содержимое зависит от выбранного агента */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Clock className="w-4 h-4" />
-                  История
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-3">
-                  {selectedAgent ? (
-                    <>
-                      <h4 className="font-medium mb-3">История чатов с {selectedAgent.name}</h4>
-                      <ScrollArea className="h-60">
-                        {chatSessions.filter(s => s.agentId === selectedAgent.id).length > 0 ? (
-                          <div className="space-y-2">
-                            {chatSessions
-                              .filter(s => s.agentId === selectedAgent.id)
-                              .map(session => (
-                                <div
-                                  key={session.id}
-                                  className={cn(
-                                    "p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors",
-                                    currentSession?.id === session.id && "bg-muted border-primary"
-                                  )}
-                                  onClick={() => setCurrentSession(session)}
-                                >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium">
-                                      {session.messages.length} сообщений
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {formatTime(session.createdAt)}
-                                    </span>
+            {/* Premium Action Buttons */}
+            <div className="flex items-center gap-3">
+              {/* Chat History with Glassmorphism */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2 bg-background/80 backdrop-blur-sm border-border/60 hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                  >
+                    <Clock className="w-4 h-4" />
+                    История
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0 bg-background/95 backdrop-blur-md border-border/60" align="end">
+                  <div className="p-4">
+                    {selectedAgent ? (
+                      <>
+                        <h4 className="font-medium mb-3">История чатов с {selectedAgent.name}</h4>
+                        <ScrollArea className="h-60">
+                          {chatSessions.filter(s => s.agentId === selectedAgent.id).length > 0 ? (
+                            <div className="space-y-2">
+                              {chatSessions
+                                .filter(s => s.agentId === selectedAgent.id)
+                                .map(session => (
+                                  <div
+                                    key={session.id}
+                                    className={cn(
+                                      "p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors",
+                                      currentSession?.id === session.id && "bg-muted border-primary"
+                                    )}
+                                    onClick={() => setCurrentSession(session)}
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm font-medium">
+                                        {session.messages.length} сообщений
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {formatTime(session.createdAt)}
+                                      </span>
+                                    </div>
+                                    {session.messages.length > 0 && (
+                                      <p className="text-xs text-muted-foreground line-clamp-2">
+                                        {session.messages[0].content}
+                                      </p>
+                                    )}
                                   </div>
-                                  {session.messages.length > 0 && (
-                                    <p className="text-xs text-muted-foreground line-clamp-2">
-                                      {session.messages[0].content}
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-4 text-sm text-muted-foreground">
-                            Нет истории чатов с этим агентом
-                          </div>
-                        )}
-                      </ScrollArea>
-                    </>
-                  ) : (
-                    <>
-                      <h4 className="font-medium mb-3">Вся история чатов</h4>
-                      <ScrollArea className="h-60">
-                        {chatSessions.length > 0 ? (
-                          <div className="space-y-2">
-                            {chatSessions.map(session => {
-                              const agent = userAgents.find(a => a.id === session.agentId);
-                              return (
-                                <div
-                                  key={session.id}
-                                  className="p-3 rounded-lg border hover:bg-muted transition-colors cursor-pointer"
-                                  onClick={() => {
-                                    if (agent) {
-                                      setSelectedAgent(agent);
-                                      setCurrentSession(session);
-                                    }
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium">
-                                      {agent?.name || 'Неизвестный агент'}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {formatTime(session.createdAt)}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {session.messages.length} сообщений
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="text-center py-4 text-sm text-muted-foreground">
-                            История чатов пуста
-                          </div>
-                        )}
-                      </ScrollArea>
-                    </>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Quick Actions - показываем всегда, но некоторые действия доступны только с агентом */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Действия
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-2" align="end">
-                <div className="space-y-1">
-                  {selectedAgent && (
-                    <>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2"
-                        onClick={() => startNewChat(selectedAgent)}
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        Новый чат
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2"
-                        onClick={clearChat}
-                        disabled={!currentSession?.messages.length}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Очистить чат
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2"
-                        onClick={() => {
-                          if (currentSession?.messages.length) {
-                            const chatContent = currentSession.messages
-                              .map(m => `${m.role === 'user' ? 'Пользователь' : selectedAgent.name}: ${m.content}`)
-                              .join('\n\n');
-                            navigator.clipboard.writeText(chatContent);
-                            toast({
-                              title: "Экспорт чата",
-                              description: "Переписка скопирована в буфер обмена"
-                            });
-                          }
-                        }}
-                        disabled={!currentSession?.messages.length}
-                      >
-                        <Copy className="w-4 h-4" />
-                        Экспорт чата
-                      </Button>
-                    </>
-                  )}
-                  
-                  {!selectedAgent && (
-                    <div className="text-center py-4 text-sm text-muted-foreground">
-                      Выберите агента для доступа к действиям
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-        {/* Chat Interface */}
-        {selectedAgent && currentSession ? (
-          <div className="flex flex-col flex-1 min-h-0">
-            
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4 bg-card rounded-t-lg">
-              <div className="space-y-4">
-                {currentSession.messages.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Начните разговор</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Задайте вопрос агенту {selectedAgent.name}
-                    </p>
-                    
-                    {/* Suggested Prompts */}
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Попробуйте спросить:</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl mx-auto">
-                        {suggestedPrompts.map((prompt, index) => (
-                          <Button
-                            key={index}
-                            variant="outline"
-                            size="sm"
-                            className="text-left h-auto p-3"
-                            onClick={() => setInputMessage(prompt)}
-                          >
-                            <span className="text-xs">{prompt}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  currentSession.messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {message.role === 'assistant' && (
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                          <Bot className="w-4 h-4" />
-                        </div>
-                      )}
-                      
-                      <div className={`max-w-[70%] ${message.role === 'user' ? 'order-2' : ''}`}>
-                        <div
-                          className={`p-3 rounded-lg ${
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground ml-auto'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {message.role === 'user' ? (
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                ))}
+                            </div>
                           ) : (
-                            <div className="prose prose-sm max-w-none dark:prose-invert">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {message.content}
-                              </ReactMarkdown>
+                            <div className="text-center py-4 text-sm text-muted-foreground">
+                              Нет истории чатов с этим агентом
                             </div>
                           )}
-                        </div>
-                        
-                        <div className={`flex items-center gap-2 mt-1 text-xs text-muted-foreground ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}>
-                          <span>{formatTime(message.timestamp)}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-1"
-                            onClick={() => copyMessage(message.content)}
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {message.role === 'user' && (
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                          <User className="w-4 h-4" />
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-                
-                {/* Streaming content */}
-                {isGenerating && streamingContent && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg max-w-[70%]">
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {streamingContent}
-                        </ReactMarkdown>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span>Генерируется...</span>
-                        <Timer className="w-3 h-3" />
-                        <span>{formatElapsedTime(elapsedTime)}</span>
-                      </div>
-                    </div>
+                        </ScrollArea>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-medium mb-3">Вся история чатов</h4>
+                        <ScrollArea className="h-60">
+                          {chatSessions.length > 0 ? (
+                            <div className="space-y-2">
+                              {chatSessions.map(session => {
+                                const agent = userAgents.find(a => a.id === session.agentId);
+                                return (
+                                  <div
+                                    key={session.id}
+                                    className="p-3 rounded-lg border hover:bg-muted transition-colors cursor-pointer"
+                                    onClick={() => {
+                                      if (agent) {
+                                        setSelectedAgent(agent);
+                                        setCurrentSession(session);
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm font-medium">
+                                        {agent?.name || 'Неизвестный агент'}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {formatTime(session.createdAt)}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {session.messages.length} сообщений
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-sm text-muted-foreground">
+                              История чатов пуста
+                            </div>
+                          )}
+                        </ScrollArea>
+                      </>
+                    )}
                   </div>
-                )}
-                
-                {/* Loading state without streaming */}
-                {isGenerating && !streamingContent && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        {getProviderIcon(selectedAgent.aiProvider)}
-                        <span>
-                          {selectedAgent.aiModel?.includes('deep-research') 
-                            ? `Глубокое исследование...`
-                            : `${selectedAgent.name} обрабатывает запрос...`
-                          }
-                        </span>
-                        <Timer className="w-3 h-3" />
-                        <span>{formatElapsedTime(elapsedTime)}</span>
-                      </div>
-                      
-                      {estimatedTime && (
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                            <span>Прогресс выполнения</span>
-                            <span>{Math.min(100, Math.round((elapsedTime / estimatedTime) * 100))}%</span>
-                          </div>
-                          <div className="w-full bg-background rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
-                              style={{ width: `${Math.min(100, (elapsedTime / estimatedTime) * 100)}%` }}
-                            />
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Ожидаемое время: ~{Math.floor(estimatedTime / 60)}:{((estimatedTime % 60).toString().padStart(2, '0'))} мин
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+                </PopoverContent>
+              </Popover>
 
-            {/* Input */}
-            <div className="p-4 border-t bg-card rounded-b-lg">
-              <div className="flex gap-2">
-                <textarea
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder={`Сообщение для ${selectedAgent.name}...`}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-                  disabled={isGenerating}
-                  className="flex-1 min-h-[120px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  rows={4}
-                />
-                {(() => {
-                  console.log('Current state:', { selectedAgent: !!selectedAgent, currentSession: !!currentSession, isGenerating, inputMessage: inputMessage.length });
-                  return null;
-                })()}
-                <Button
-                  onClick={sendMessage}
-                  disabled={!inputMessage.trim() || isGenerating}
-                  size="icon"
-                  className="self-end"
+              {currentSession && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={clearChat}
+                  className="gap-2 bg-background/80 backdrop-blur-sm border-border/60 hover:bg-destructive/10 hover:border-destructive/30 transition-all duration-300 hover:shadow-lg hover:scale-105"
                 >
-                  {isGenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <MessageSquare className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Добро пожаловать в Playground</h3>
-              <p className="text-muted-foreground mb-4">
-                Выберите агента из списка выше, чтобы начать общение
-              </p>
-              {userAgents.length === 0 && (
-                <Button onClick={() => window.location.href = '/my-agents'}>
-                  Создать первого агента
+                  <Trash2 className="w-4 h-4" />
+                  Очистить
                 </Button>
               )}
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Main Chat Area with Enhanced Design */}
+        <div className="flex-1 flex gap-8 min-h-0">
+          
+          {/* Enhanced Agent Selection Panel */}
+          {!selectedAgent && (
+            <div className="flex-1 flex items-center justify-center">
+              <Card className="w-full max-w-lg border-border/60 bg-gradient-to-br from-card/90 to-card/60 backdrop-blur-sm shadow-2xl">
+                <CardHeader className="text-center pb-4">
+                  <div className="mx-auto mb-4 p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 w-fit">
+                    <Bot className="w-8 h-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    Выберите AI агента
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    Выберите специализированного агента для начала интеллектуального диалога
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Каждый агент обучен для конкретных задач</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Enhanced Chat Interface */}
+          {selectedAgent && (
+            <div className="flex-1 flex flex-col min-h-0">
+              
+              {/* Premium Agent Info Header */}
+              <div className="mb-6 p-6 bg-gradient-to-r from-card/90 to-card/60 rounded-2xl border border-border/60 backdrop-blur-sm shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">
+                        <Bot className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        {selectedAgent.name}
+                      </h3>
+                      <div className="flex items-center gap-3 mt-1">
+                        <Badge 
+                          variant="secondary" 
+                          className="text-xs bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors"
+                        >
+                          {selectedAgent.type}
+                        </Badge>
+                        {selectedAgent.aiProvider && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+                            {getProviderIcon(selectedAgent.aiProvider)}
+                            <span className="text-xs font-medium">{selectedAgent.aiProvider}</span>
+                            <span className="text-xs text-muted-foreground">•</span>
+                            <span className="text-xs text-muted-foreground">{selectedAgent.aiModel}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Enhanced Generation Status */}
+                  {isGenerating && (
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20">
+                      {isTyping ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          <span className="text-sm font-medium text-primary">Обдумывает...</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          <span className="text-sm font-medium">Генерирует ответ</span>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Timer className="w-3 h-3" />
+                            <span>{formatElapsedTime(elapsedTime)}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Enhanced Messages Area */}
+              <ScrollArea className="flex-1 border border-border/60 rounded-2xl p-6 mb-6 bg-gradient-to-b from-background/50 to-background/30 backdrop-blur-sm">
+                <div className="space-y-6">
+                  {currentSession?.messages.map((message, index) => (
+                    <div 
+                      key={message.id} 
+                      className={cn(
+                        "flex gap-4 group animate-fade-in",
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                      )}
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      {message.role === 'assistant' && (
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0 mt-1 shadow-lg">
+                          <Bot className="w-5 h-5 text-primary" />
+                        </div>
+                      )}
+                      
+                      <div className={cn(
+                        "max-w-[75%] rounded-2xl p-4 relative shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02]",
+                        message.role === 'user' 
+                          ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-auto' 
+                          : 'bg-gradient-to-br from-card/90 to-card/60 border border-border/50'
+                      )}>
+                        {message.role === 'assistant' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyMessage(message.content)}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 h-8 w-8 p-0 hover:bg-primary/10 hover:scale-110"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        )}
+                        
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                        
+                        <div className={cn(
+                          "text-xs mt-3 opacity-70 font-medium",
+                          message.role === 'user' ? 'text-right' : 'text-left'
+                        )}>
+                          {formatTime(message.timestamp)}
+                        </div>
+                      </div>
+                      
+                      {message.role === 'user' && (
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/10 flex items-center justify-center shrink-0 mt-1 shadow-lg">
+                          <User className="w-5 h-5 text-secondary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Enhanced Streaming content */}
+                  {isGenerating && streamingContent && (
+                    <div className="flex gap-4 justify-start animate-fade-in">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0 mt-1 shadow-lg">
+                        <Bot className="w-5 h-5 text-primary animate-pulse" />
+                      </div>
+                      <div className="max-w-[75%] rounded-2xl p-4 bg-gradient-to-br from-card/90 to-card/60 border border-border/50 shadow-lg backdrop-blur-sm">
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {streamingContent}
+                          </ReactMarkdown>
+                        </div>
+                        <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                          <span>Печатает...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {/* Enhanced Suggested Prompts */}
+              {currentSession?.messages.length === 0 && !isGenerating && (
+                <div className="mb-6 p-6 bg-gradient-to-r from-muted/30 to-muted/10 rounded-2xl border border-dashed border-border/60 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <p className="text-sm font-medium text-foreground">Начните с этих идей:</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggestedPrompts.map((prompt, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        onClick={() => setInputMessage(prompt)}
+                        className="h-auto p-4 text-left justify-start hover:bg-primary/10 hover:border-primary/20 border border-transparent transition-all duration-300 hover:shadow-md hover:scale-[1.02] rounded-xl bg-background/50"
+                      >
+                        <div className="text-sm leading-relaxed">{prompt}</div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Premium Input Area */}
+              <div className="relative">
+                <div className="flex gap-4 p-4 bg-gradient-to-r from-card/90 to-card/60 rounded-2xl border border-border/60 backdrop-blur-sm shadow-lg">
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder={
+                      isGenerating 
+                        ? "Агент готовит ответ..." 
+                        : `Спросите что-нибудь у ${selectedAgent.name}...`
+                    }
+                    disabled={isGenerating}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    className="flex-1 border-border/60 bg-background/80 backdrop-blur-sm focus:bg-background focus:ring-primary/20 focus:border-primary/30 transition-all duration-300 rounded-xl"
+                  />
+                  <Button 
+                    onClick={sendMessage} 
+                    disabled={!inputMessage.trim() || isGenerating}
+                    size="icon"
+                    className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 rounded-xl"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                {/* Ambient glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-2xl blur-xl opacity-30 -z-10" />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );
