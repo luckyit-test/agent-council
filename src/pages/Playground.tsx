@@ -20,12 +20,14 @@ import {
   Copy,
   Loader2,
   Circle,
-  Timer,
+  Clock,
+  History,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
 import { supabase } from "@/integrations/supabase/client";
 import { SmartAgentSelector } from "@/components/SmartAgentSelector";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -474,9 +476,82 @@ const Playground = () => {
                     isGenerating ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
                   )} />
                   <span className="hidden sm:inline">
-                    {isGenerating ? 'Генерация...' : 'Готов'}
+                    {isGenerating ? "Генерация..." : "Готов"}
                   </span>
                 </div>
+
+                {/* Chat History Button */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 hover:bg-muted"
+                    >
+                      <History className="w-4 h-4" />
+                      <span className="hidden sm:inline">История</span>
+                      {chatSessions.length > 0 && (
+                        <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                          {chatSessions.length}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="p-4">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        История чатов
+                      </h4>
+                      <ScrollArea className="h-60">
+                        {chatSessions.length > 0 ? (
+                          <div className="space-y-2">
+                            {chatSessions.map(session => {
+                              const agent = userAgents.find(a => a.id === session.agentId);
+                              return (
+                                <div
+                                  key={session.id}
+                                  className={cn(
+                                    "p-3 rounded-lg border cursor-pointer hover:bg-muted transition-colors",
+                                    currentSession?.id === session.id && "bg-primary/5 border-primary/20"
+                                  )}
+                                  onClick={() => {
+                                    if (agent) {
+                                      setSelectedAgent(agent);
+                                      setCurrentSession(session);
+                                    }
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium truncate">
+                                      {agent?.name || "Неизвестный агент"}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                                      {formatTime(session.createdAt)}
+                                    </span>
+                                  </div>
+                                  {session.messages.length > 0 && (
+                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                                      {session.messages[session.messages.length - 1]?.content?.substring(0, 80)}...
+                                    </p>
+                                  )}
+                                  <Badge variant="secondary" className="text-xs">
+                                    {session.messages.length} сообщений
+                                  </Badge>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
+                            <p className="text-sm">Нет истории чатов</p>
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 
                 {currentSession && (
                   <Button 
