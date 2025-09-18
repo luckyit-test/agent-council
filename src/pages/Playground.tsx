@@ -443,24 +443,22 @@ const Playground = () => {
       <div className="mx-auto max-w-7xl h-[calc(100vh-120px)] flex flex-col gap-6 p-4 md:p-6">
         
         {/* Clean Modern Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-xl bg-card border shadow-sm">
+        <header className="flex items-center justify-between gap-4 p-6 rounded-xl bg-card border shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                <Brain className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-foreground">
-                  AI Playground
-                </h1>
-                <p className="text-sm text-muted-foreground">Работа с ИИ агентами</p>
-              </div>
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Brain className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">
+                AI Playground
+              </h1>
+              <p className="text-sm text-muted-foreground">Работа с ИИ агентами</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Agent Selector */}
-            <div className="min-w-0 max-w-xs">
+            <div className="min-w-0 max-w-sm">
               <SmartAgentSelector
                 agents={userAgents}
                 selectedAgent={selectedAgent}
@@ -496,318 +494,265 @@ const Playground = () => {
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
-          
-          {/* Chat Sessions Sidebar */}
-          <div className="lg:col-span-1 flex flex-col">
-            <Card className="flex-1 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                  История чатов
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 p-0">
-                <ScrollArea className="h-full max-h-[600px]">
-                  <div className="p-3 space-y-2">
-                    {chatSessions.map((session) => (
-                      <button
-                        key={session.id}
-                        onClick={() => setCurrentSession(session)}
-                        className={cn(
-                          "w-full p-3 rounded-lg border text-left transition-all duration-200 hover:shadow-sm group",
-                          currentSession?.id === session.id
-                            ? "bg-primary/5 border-primary/20 shadow-sm"
-                            : "bg-card hover:bg-muted/50 border-border"
-                        )}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-sm truncate">
-                            {session.agentName}
-                          </span>
-                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                            {formatTime(session.createdAt)}
-                          </span>
-                        </div>
-                        {session.messages.length > 0 && (
-                          <div className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                            {session.messages[session.messages.length - 1]?.content?.substring(0, 80)}...
-                          </div>
-                        )}
-                        <Badge variant="secondary" className="text-xs">
-                          {session.messages.length} сообщений
+        {/* Main Content Area - Full Width */}
+        <div className="flex-1 flex flex-col min-h-0">
+          {selectedAgent && currentSession ? (
+            <Card className="flex-1 flex flex-col shadow-sm">
+              {/* Compact Chat Header */}
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                      <Bot className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-base">{selectedAgent.name}</h2>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {getProviderIcon(selectedAgent.aiProvider)}
+                        <span>{selectedAgent.aiModel || 'default'}</span>
+                        <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                          {selectedAgent.type}
                         </Badge>
-                      </button>
-                    ))}
-                    
-                    {chatSessions.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
-                        <p className="text-sm">Нет чатов</p>
-                        <p className="text-xs opacity-70">Выберите агента</p>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Chat Interface */}
-          <div className="lg:col-span-3 flex flex-col">
-            {selectedAgent && currentSession ? (
-              <Card className="flex-1 flex flex-col shadow-sm">
-                {/* Clean Chat Header */}
-                <CardHeader className="pb-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        <Bot className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h2 className="font-semibold text-base">{selectedAgent.name}</h2>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          {getProviderIcon(selectedAgent.aiProvider)}
-                          <span>{selectedAgent.aiModel || 'default'}</span>
-                          <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                            {selectedAgent.type}
-                          </Badge>
-                        </div>
                       </div>
                     </div>
-                    
-                    {/* Minimal Generation Status */}
-                    {isGenerating && (
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/5 border border-primary/10">
-                        <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                        <span className="text-xs text-primary font-medium">
-                          {formatElapsedTime(elapsedTime)}
-                        </span>
-                      </div>
+                  </div>
+                  
+                  {/* Chat Session Info */}
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <span>{currentSession.messages.length} сообщений</span>
+                    {chatSessions.length > 1 && (
+                      <span>• {chatSessions.length} чатов</span>
                     )}
                   </div>
-                </CardHeader>
+                </div>
+              </CardHeader>
 
-                {/* Clean Messages Container */}
-                <CardContent className="flex-1 p-0 overflow-hidden">
-                  <ScrollArea className="h-full">
-                    <div className="p-4 space-y-4">
-                      {currentSession.messages.map((message) => (
-                        <div key={message.id} className={cn(
-                          "flex gap-3 group",
-                          message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+              {/* Messages Container */}
+              <CardContent className="flex-1 p-0 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-4 space-y-4">
+                    {currentSession.messages.map((message) => (
+                      <div key={message.id} className={cn(
+                        "flex gap-3 group",
+                        message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                      )}>
+                        {/* Avatar */}
+                        <div className={cn(
+                          "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium",
+                          message.role === 'user' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground'
                         )}>
-                          {/* Minimal Avatar */}
+                          {message.role === 'user' ? (
+                            <User className="w-4 h-4" />
+                          ) : (
+                            <Bot className="w-4 h-4" />
+                          )}
+                        </div>
+                        
+                        {/* Message Content */}
+                        <div className={cn(
+                          "flex-1 min-w-0 max-w-[85%]",
+                          message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'
+                        )}>
+                          {/* Message Bubble */}
                           <div className={cn(
-                            "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium",
-                            message.role === 'user' 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-muted text-muted-foreground'
+                            "px-4 py-3 rounded-lg relative group/message",
+                            message.role === 'user'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-foreground'
                           )}>
-                            {message.role === 'user' ? (
-                              <User className="w-4 h-4" />
-                            ) : (
-                              <Bot className="w-4 h-4" />
-                            )}
-                          </div>
-                          
-                          {/* Message Content */}
-                          <div className={cn(
-                            "flex-1 min-w-0 max-w-[80%]",
-                            message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'
-                          )}>
-                            {/* Clean Message Bubble */}
-                            <div className={cn(
-                              "px-3 py-2 rounded-lg relative group/message",
-                              message.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground'
-                            )}>
-                              {/* Copy Button */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyMessage(message.content)}
-                                className={cn(
-                                  "absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover/message:opacity-100 transition-opacity",
-                                  message.role === 'user' ? 'text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-                                )}
-                              >
-                                <Copy className="w-3 h-3" />
-                              </Button>
-                              
-                              {/* Message Text */}
-                              <div className="pr-6">
-                                <div className={cn(
-                                  "prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-                                  message.role === 'user' 
-                                    ? 'prose-invert [&_*]:text-primary-foreground' 
-                                    : '[&_*]:text-foreground [&_code]:bg-background/50 [&_code]:text-foreground [&_pre]:bg-background/50'
-                                )}>
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {message.content}
-                                  </ReactMarkdown>
-                                </div>
+                            {/* Copy Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyMessage(message.content)}
+                              className={cn(
+                                "absolute top-1 right-1 w-6 h-6 p-0 opacity-0 group-hover/message:opacity-100 transition-opacity",
+                                message.role === 'user' ? 'text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                              )}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                            
+                            {/* Message Text */}
+                            <div className="pr-8">
+                              <div className={cn(
+                                "prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+                                message.role === 'user' 
+                                  ? 'prose-invert [&_*]:text-primary-foreground' 
+                                  : '[&_*]:text-foreground [&_code]:bg-background/50 [&_code]:text-foreground [&_pre]:bg-background/50'
+                              )}>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {message.content}
+                                </ReactMarkdown>
                               </div>
                             </div>
-                            
-                            {/* Timestamp */}
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {formatTime(message.timestamp)}
-                            </div>
+                          </div>
+                          
+                          {/* Timestamp */}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {formatTime(message.timestamp)}
                           </div>
                         </div>
-                      ))}
-                      
-                      {/* Streaming Content */}
-                      {isGenerating && streamingContent && (
-                        <div className="flex gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
-                            <Bot className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 min-w-0 max-w-[80%]">
-                            <div className="px-3 py-2 rounded-lg bg-muted text-muted-foreground">
+                      </div>
+                    ))}
+                    
+                    {/* Beautiful Streaming Animation */}
+                    {isGenerating && streamingContent && (
+                      <div className="flex gap-3 animate-fade-in">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                          <Bot className="w-4 h-4 animate-pulse" />
+                        </div>
+                        <div className="flex-1 min-w-0 max-w-[85%]">
+                          <div className="px-4 py-3 rounded-lg bg-muted text-foreground relative overflow-hidden">
+                            {/* Streaming gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse opacity-50" />
+                            
+                            <div className="relative">
                               <div className="prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_*]:text-foreground [&_code]:bg-background/50 [&_code]:text-foreground [&_pre]:bg-background/50">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                   {streamingContent}
                                 </ReactMarkdown>
                               </div>
-                              <div className="flex items-center gap-1 mt-2 opacity-60">
-                                <div className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <div className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <div className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
+                              
+                              {/* Animated cursor */}
+                              <div className="inline-flex items-center mt-1">
+                                <div className="w-2 h-4 bg-primary/60 animate-pulse rounded-sm" />
                               </div>
                             </div>
                           </div>
                         </div>
-                      )}
-                      
-                      {/* Typing Indicator */}
-                      {isTyping && !streamingContent && (
-                        <div className="flex gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
-                            <Bot className="w-4 h-4" />
-                          </div>
-                          <div className="px-3 py-2 rounded-lg bg-muted">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Думаю</span>
-                              <div className="flex items-center gap-1">
-                                <div className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <div className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <div className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
-                              </div>
+                      </div>
+                    )}
+                    
+                    {/* Elegant Typing Indicator */}
+                    {isTyping && !streamingContent && (
+                      <div className="flex gap-3 animate-fade-in">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                          <Bot className="w-4 h-4" />
+                        </div>
+                        <div className="px-4 py-3 rounded-lg bg-muted relative overflow-hidden">
+                          {/* Thinking animation */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 animate-pulse" />
+                          
+                          <div className="relative flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Обдумывает ответ</span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '200ms' }} />
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '400ms' }} />
                             </div>
                           </div>
                         </div>
-                      )}
-                      
-                      <div ref={messagesEndRef} />
-                    </div>
-                  </ScrollArea>
-                </CardContent>
+                      </div>
+                    )}
+                    
+                    <div ref={messagesEndRef} />
+                  </div>
+                </ScrollArea>
+              </CardContent>
 
-                {/* Clean Input Area */}
-                <div className="p-4 border-t bg-background">
-                  
-                  {/* Suggested Prompts */}
-                  {currentSession.messages.length === 0 && (
-                    <div className="mb-4">
-                      <p className="text-sm text-muted-foreground mb-3 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        Рекомендуемые вопросы:
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {suggestedPrompts.map((prompt, index) => (
-                          <Button
-                            key={index}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setInputMessage(prompt)}
-                            className="justify-start text-left h-auto p-2 text-xs hover:bg-muted"
-                          >
-                            <span className="line-clamp-2">{prompt}</span>
-                          </Button>
-                        ))}
-                      </div>
+              {/* Input Area */}
+              <div className="p-4 border-t bg-background">
+                
+                {/* Suggested Prompts */}
+                {currentSession.messages.length === 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-muted-foreground mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Рекомендуемые вопросы:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {suggestedPrompts.map((prompt, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setInputMessage(prompt)}
+                          className="justify-start text-left h-auto p-3 text-xs hover:bg-muted"
+                        >
+                          <span className="line-clamp-2">{prompt}</span>
+                        </Button>
+                      ))}
                     </div>
-                  )}
-                  
-                  {/* Input Form */}
-                  <form 
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      sendMessage();
-                    }}
-                    className="flex gap-2"
+                  </div>
+                )}
+                
+                {/* Input Form */}
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    sendMessage();
+                  }}
+                  className="flex gap-2"
+                >
+                  <div className="flex-1 relative">
+                    <Input
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      placeholder={`Сообщение для ${selectedAgent.name}...`}
+                      disabled={isGenerating}
+                      className="pr-16"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      {inputMessage.length}/1000
+                    </div>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={!inputMessage.trim() || isGenerating}
+                    size="sm"
+                    className="px-4"
                   >
-                    <div className="flex-1 relative">
-                      <Input
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder={`Сообщение для ${selectedAgent.name}...`}
-                        disabled={isGenerating}
-                        className="pr-16"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            sendMessage();
-                          }
-                        }}
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        {inputMessage.length}/1000
-                      </div>
-                    </div>
-                    <Button 
-                      type="submit" 
-                      disabled={!inputMessage.trim() || isGenerating}
-                      size="sm"
-                      className="px-4"
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </form>
+                    {isGenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </form>
+              </div>
+            </Card>
+          ) : (
+            /* Clean Empty State */
+            <Card className="flex-1 flex items-center justify-center">
+              <div className="text-center p-8 max-w-md">
+                <div className="w-16 h-16 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                  <Brain className="w-8 h-8 text-primary" />
                 </div>
-              </Card>
-            ) : (
-              /* Clean Empty State */
-              <Card className="flex-1 flex items-center justify-center">
-                <div className="text-center p-8 max-w-md">
-                  <div className="w-16 h-16 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                    <Brain className="w-8 h-8 text-primary" />
+                
+                <h2 className="text-xl font-semibold mb-3">
+                  Выберите агента
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Выберите AI агента из списка выше для начала беседы. 
+                  Каждый агент имеет свои специализации и возможности.
+                </p>
+                
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span>Различные AI модели</span>
                   </div>
-                  
-                  <h2 className="text-xl font-semibold mb-3">
-                    Выберите агента
-                  </h2>
-                  <p className="text-muted-foreground mb-6">
-                    Выберите AI агента из списка выше для начала беседы. 
-                    Каждый агент имеет свои специализации и возможности.
-                  </p>
-                  
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2 justify-center">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      <span>Различные AI модели</span>
-                    </div>
-                    <div className="flex items-center gap-2 justify-center">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      <span>Персональные настройки</span>
-                    </div>
-                    <div className="flex items-center gap-2 justify-center">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      <span>Сохранение истории</span>
-                    </div>
+                  <div className="flex items-center gap-2 justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span>Персональные настройки</span>
+                  </div>
+                  <div className="flex items-center gap-2 justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span>Сохранение истории</span>
                   </div>
                 </div>
-              </Card>
-            )}
-          </div>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </Layout>
