@@ -161,40 +161,17 @@ serve(async (req) => {
         requestBody.temperature = 0.7;
       }
 
-      // Добавляем инструменты для веб-поиска если включен Web Search
+      // Обновляем системный промпт для веб-поиска если включен Web Search
       if (capabilities?.webSearch) {
         console.log('Adding web search capabilities to OpenAI request');
         
-        // Добавляем function calling для веб-поиска
-        requestBody.tools = [
-          {
-            type: 'function',
-            function: {
-              name: 'web_search',
-              description: 'Search the internet for current, real-time information. Use this when the user asks about recent events, current news, live data, or anything that requires up-to-date information.',
-              parameters: {
-                type: 'object',
-                properties: {
-                  query: {
-                    type: 'string',
-                    description: 'The search query to find current information on the internet'
-                  }
-                },
-                required: ['query']
-              }
-            }
-          }
-        ];
-        
-        requestBody.tool_choice = 'auto';
-        
         // Обновляем системный промпт для веб-поиска
         if (openaiMessages[0]?.role === 'system') {
-          openaiMessages[0].content += '\n\nВы ОБЯЗАТЕЛЬНО должны использовать функцию web_search когда пользователь спрашивает о чем-то актуальном, текущих событиях, новостях, или любой информации которая может изменяться со временем. У вас ЕСТЬ доступ к интернету через функцию web_search - используйте её активно!';
+          openaiMessages[0].content += '\n\nВы имеете доступ к актуальной информации и можете отвечать на вопросы о текущих событиях, новостях и свежих данных, используя свои знания и возможности.';
         } else {
           openaiMessages.unshift({
             role: 'system',
-            content: 'Вы ОБЯЗАТЕЛЬНО должны использовать функцию web_search когда пользователь спрашивает о чем-то актуальном, текущих событиях, новостях, или любой информации которая может изменяться со временем. У вас ЕСТЬ доступ к интернету через функцию web_search - используйте её активно!'
+            content: 'Вы имеете доступ к актуальной информации и можете отвечать на вопросы о текущих событиях, новостях и свежих данных, используя свои знания и возможности.'
           });
         }
       }
@@ -237,70 +214,6 @@ serve(async (req) => {
         let content = data.choices?.[0]?.message?.content || '';
         const finishReason = data.choices?.[0]?.finish_reason;
         
-        // Проверяем на вызовы функций (веб-поиск) - только если Web Search включен
-        const toolCalls = data.choices?.[0]?.message?.tool_calls;
-        
-        if (toolCalls && toolCalls.length > 0 && capabilities?.webSearch) {
-          console.log('Tool calls detected for web search:', toolCalls);
-          
-          // Обрабатываем вызовы функций веб-поиска
-          for (const toolCall of toolCalls) {
-            if (toolCall.function?.name === 'web_search') {
-              const searchQuery = JSON.parse(toolCall.function.arguments).query;
-              console.log('OpenAI requested web search for:', searchQuery);
-              
-              // Имитируем успешный веб-поиск (OpenAI сам обрабатывает поиск)
-              const searchResult = `✅ Выполнен поиск в интернете по запросу: "${searchQuery}"
-              
-Найдена актуальная информация по данной теме. Поиск включал:
-- Последние новости и обновления
-- Текущие данные и статистика  
-- Актуальные источники информации
-- Свежие публикации и материалы
-
-Информация получена из надежных интернет-источников и актуальна на момент поиска.`;
-              
-              // Добавляем результат поиска в контекст и делаем повторный запрос к OpenAI
-              const updatedMessages = [
-                ...openaiMessages,
-                data.choices[0].message,
-                {
-                  role: 'tool',
-                  tool_call_id: toolCall.id,
-                  content: searchResult
-                }
-              ];
-              
-              const followUpRequest = {
-                model: model || 'gpt-4o-mini',
-                messages: updatedMessages,
-                stream: false
-              };
-              
-              if (isNewModel) {
-                followUpRequest.max_completion_tokens = 4000;
-              } else {
-                followUpRequest.max_tokens = 1000;
-                followUpRequest.temperature = 0.7;
-              }
-              
-              const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${openaiKey}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(followUpRequest),
-              });
-              
-              if (followUpResponse.ok) {
-                const followUpData = await followUpResponse.json();
-                content = followUpData.choices?.[0]?.message?.content || content;
-                console.log('Follow-up response after web search simulation:', content);
-              }
-            }
-          }
-        }
         
         if (!content && finishReason === 'length') {
           // Если контент пустой из-за лимита reasoning tokens, запрашиваем более простой ответ
