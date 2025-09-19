@@ -219,13 +219,28 @@ serve(async (req) => {
       console.log('Using non-streaming mode with Responses API');
       const data = await response.json();
       console.log('OpenAI Responses API response data:', JSON.stringify(data, null, 2));
+      console.log('Response data keys:', Object.keys(data));
+      console.log('Output array:', data.output);
       
       // Обрабатываем ответ от Responses API согласно примеру
       let content = '';
       
-      if (data.output && data.output[0] && data.output[0].content && data.output[0].content[0]) {
-        content = data.output[0].content[0].text || '';
+      console.log('=== ИЗВЛЕЧЕНИЕ КОНТЕНТА ===');
+      console.log('data.output exists:', !!data.output);
+      console.log('data.output length:', data.output?.length);
+      
+      if (data.output && data.output[0]) {
+        console.log('First output item:', JSON.stringify(data.output[0], null, 2));
+        console.log('Content exists:', !!data.output[0].content);
+        
+        if (data.output[0].content && data.output[0].content[0]) {
+          console.log('First content item:', JSON.stringify(data.output[0].content[0], null, 2));
+          content = data.output[0].content[0].text || '';
+        }
       }
+      
+      console.log('Extracted content:', content);
+      console.log('Content length:', content?.length);
       
       if (!content) {
         console.log('No content found in response, using fallback');
