@@ -32,7 +32,11 @@ import {
   User,
   Tag,
   Save,
-  Trash2
+  Trash2,
+  Globe,
+  BookOpen,
+  Zap,
+  Shield
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +58,8 @@ interface Agent {
   author?: string;
   tags?: string[];
   isCustom?: boolean;
+  aiProvider?: string;
+  aiModel?: string;
   capabilities?: {
     webSearch?: boolean;
     deepResearch?: boolean;
@@ -68,11 +74,56 @@ interface AgentDetailDialogProps {
 }
 
 const agentTypes = [
-  { value: "analyst", label: "Аналитик", icon: Brain },
-  { value: "creative", label: "Творческий", icon: Lightbulb },
-  { value: "technical", label: "Технический", icon: Code },
-  { value: "judge", label: "Судья", icon: Gavel },
-  { value: "researcher", label: "Исследователь", icon: Search }
+  { value: "analyst", label: "Аналитик", icon: Brain, description: "Анализ данных и выявление закономерностей" },
+  { value: "creative", label: "Творческий", icon: Lightbulb, description: "Генерация креативных идей" },
+  { value: "technical", label: "Технический", icon: Code, description: "Техническая экспертиза" },
+  { value: "judge", label: "Судья", icon: Gavel, description: "Оценка и принятие решений" },
+  { value: "researcher", label: "Исследователь", icon: Search, description: "Поиск и анализ информации" }
+];
+
+const aiProviders = [
+  { 
+    value: "openai", 
+    label: "OpenAI", 
+    icon: Zap,
+    models: [
+      { value: "gpt-4o", label: "GPT-4o" },
+      { value: "gpt-4", label: "GPT-4" },
+      { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" }
+    ]
+  },
+  { 
+    value: "anthropic", 
+    label: "Anthropic", 
+    icon: Shield,
+    models: [
+      { value: "claude-opus-4-1-20250805", label: "Claude 4 Opus" },
+      { value: "claude-sonnet-4-20250514", label: "Claude 4 Sonnet" },
+      { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
+      { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" }
+    ]
+  },
+  { 
+    value: "google", 
+    label: "Google AI", 
+    icon: Brain,
+    models: [
+      { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+      { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" }
+    ]
+  },
+  { 
+    value: "perplexity", 
+    label: "Perplexity", 
+    icon: Search,
+    models: [
+      { value: "sonar", label: "Sonar (быстрая модель)" },
+      { value: "sonar-pro", label: "Sonar Pro (продвинутая)" },
+      { value: "sonar-reasoning", label: "Sonar Reasoning (рассуждения)" },
+      { value: "sonar-reasoning-pro", label: "Sonar Reasoning Pro" },
+      { value: "sonar-deep-research", label: "Sonar Deep Research" }
+    ]
+  }
 ];
 
 const getAgentIcon = (type: string) => {
@@ -113,7 +164,30 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
   const [editedAgent, setEditedAgent] = useState<Agent | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Загружаем список настроенных провайдеров
+  useEffect(() => {
+    const savedKeys = localStorage.getItem('ai-api-keys');
+    let configured = [];
+    
+    if (savedKeys) {
+      try {
+        const keys = JSON.parse(savedKeys);
+        configured = Object.keys(keys).filter(key => keys[key]);
+      } catch (error) {
+        console.error('Error loading API keys:', error);
+      }
+    }
+    
+    // Добавляем провайдеров, которые настроены в Supabase secrets
+    // OpenAI и Perplexity всегда доступны через Supabase
+    const supabaseProviders = ['openai', 'perplexity'];
+    const allConfigured = [...new Set([...configured, ...supabaseProviders])];
+    
+    setConfiguredProviders(allConfigured);
+  }, [open]);
 
   useEffect(() => {
     if (agent) {
@@ -154,7 +228,9 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
       type: editedAgent.type,
       description: editedAgent.description,
       prompt: editedAgent.prompt,
-      capabilities: editedAgent.capabilities
+      capabilities: editedAgent.capabilities,
+      aiProvider: editedAgent.aiProvider,
+      aiModel: editedAgent.aiModel
     });
     
     if (success) {
@@ -204,30 +280,31 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
   };
   if (!agent) return null;
 
+  const selectedType = agentTypes.find(type => type.value === editedAgent?.type);
+  const availableProviders = aiProviders.filter(provider => configuredProviders.includes(provider.value));
+  const selectedProvider = availableProviders.find(provider => provider.value === editedAgent?.aiProvider);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getAgentColor(agent.type)}`}>
-              {getAgentIcon(agent.type)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-lg sm:text-xl truncate">
-                {agent?.isCustom ? 'Редактирование агента' : 'Детали агента'}
-              </DialogTitle>
-              <Badge variant="outline" className="text-xs">
-                {getAgentTypeName(agent.type)}
-              </Badge>
-            </div>
-          </div>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {agent?.isCustom ? 'Редактирование агента' : 'Детали агента'}
+          </DialogTitle>
+          <DialogDescription>
+            {agent?.isCustom 
+              ? 'Измените настройки и поведение вашего AI-агента'
+              : 'Подробная информация об агенте'
+            }
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Agent Information Form */}
+        <div className="space-y-6">
+          {/* Agent Details */}
           <div className="space-y-4">
+            {/* Agent Name */}
             <div>
-              <Label htmlFor="agent-name" className="text-sm font-medium">
+              <Label htmlFor="agent-name">
                 Название агента <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -244,8 +321,9 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
             
+            {/* Agent Type */}
             <div>
-              <Label htmlFor="agent-type" className="text-sm font-medium">
+              <Label htmlFor="agent-type">
                 Тип агента <span className="text-red-500">*</span>
               </Label>
               {isEditing && agent?.isCustom ? (
@@ -275,6 +353,15 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                     </SelectContent>
                   </Select>
                   {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
+                  {selectedType && (
+                    <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <selectedType.icon className="w-4 h-4" />
+                        <Badge variant="outline">{selectedType.label}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{selectedType.description}</p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <Input
@@ -285,9 +372,166 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                 />
               )}
             </div>
+
+            {/* AI Provider Selection */}
+            {(isEditing && agent?.isCustom) && (
+              <div>
+                <Label htmlFor="ai-provider">Нейросеть</Label>
+                <Select 
+                  value={editedAgent?.aiProvider || ""} 
+                  onValueChange={(value) => {
+                    setEditedAgent(prev => prev ? { ...prev, aiProvider: value } : null);
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Выберите нейросеть" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableProviders.length > 0 ? (
+                      availableProviders.map((provider) => {
+                        const Icon = provider.icon;
+                        const getModelLabel = (providerValue: string) => {
+                          switch (providerValue) {
+                            case 'openai': return 'GPT-5';
+                            case 'anthropic': return 'Claude 4 Opus';
+                            case 'google': return 'Gemini 1.5 Pro';
+                            case 'perplexity': return 'Sonar Pro';
+                            default: return 'По умолчанию';
+                          }
+                        };
+                        
+                        return (
+                          <SelectItem key={provider.value} value={provider.value}>
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                <span>{provider.label}</span>
+                              </div>
+                              <Badge variant="secondary" className="text-xs ml-2">
+                                {getModelLabel(provider.value)}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        );
+                      })
+                    ) : (
+                      <div className="p-3 text-sm text-muted-foreground text-center">
+                        Настройте API-ключи в разделе "API Ключи"
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+                {availableProviders.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ Нет настроенных нейросетей. Перейдите в раздел "API Ключи" для настройки.
+                  </p>
+                )}
+                {selectedProvider && (
+                  <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <selectedProvider.icon className="w-4 h-4" />
+                      <Badge variant="outline">{selectedProvider.label}</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {selectedProvider.value === 'openai' ? 'GPT-5' :
+                         selectedProvider.value === 'anthropic' ? 'Claude 4 Opus' :
+                         selectedProvider.value === 'google' ? 'Gemini 1.5 Pro' :
+                         selectedProvider.value === 'perplexity' ? 'Sonar Pro' : 'По умолчанию'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Агент будет использовать лучшую модель для выбранного провайдера
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             
+            {/* Дополнительные возможности */}
+            {(isEditing && agent?.isCustom) && (
+              <div className="space-y-4">
+                <Label className="text-base font-medium">Дополнительные возможности</Label>
+                
+                <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox 
+                      id="web-search"
+                      checked={editedAgent?.capabilities?.webSearch || false}
+                      onCheckedChange={(checked) => {
+                        setEditedAgent(prev => prev ? {
+                          ...prev,
+                          capabilities: {
+                            ...prev.capabilities,
+                            webSearch: checked as boolean
+                          }
+                        } : null);
+                      }}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Globe className="w-4 h-4 text-blue-600" />
+                        <Label htmlFor="web-search" className="font-medium cursor-pointer">
+                          Web Search
+                        </Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Агент сможет искать актуальную информацию в интернете в реальном времени
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <Checkbox 
+                      id="deep-research"
+                      checked={editedAgent?.capabilities?.deepResearch || false}
+                      onCheckedChange={(checked) => {
+                        setEditedAgent(prev => prev ? {
+                          ...prev,
+                          capabilities: {
+                            ...prev.capabilities,
+                            deepResearch: checked as boolean
+                          }
+                        } : null);
+                      }}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <BookOpen className="w-4 h-4 text-purple-600" />
+                        <Label htmlFor="deep-research" className="font-medium cursor-pointer">
+                          Deep Research
+                        </Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Агент будет проводить глубокое исследование темы с анализом множества источников
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {(editedAgent?.capabilities?.webSearch || editedAgent?.capabilities?.deepResearch) && (
+                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-start gap-2">
+                        <BookOpen className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">
+                            Требуется настройка API-ключей
+                          </p>
+                          <p className="text-amber-700 dark:text-amber-200">
+                            {editedAgent?.capabilities?.webSearch && "Web Search требует настройки Perplexity API. "}
+                            {editedAgent?.capabilities?.deepResearch && "Deep Research требует настройки дополнительных API ключей. "}
+                            Убедитесь, что нужные ключи настроены в разделе API-ключи.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Agent Description */}
             <div>
-              <Label htmlFor="agent-description" className="text-sm font-medium">
+              <Label htmlFor="agent-description">
                 Описание <span className="text-red-500">*</span>
               </Label>
               <Textarea
@@ -304,9 +548,10 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
               {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
             
+            {/* System Prompt */}
             {editedAgent?.prompt !== undefined && (
               <div>
-                <Label htmlFor="agent-prompt" className="text-sm font-medium">
+                <Label htmlFor="agent-prompt">
                   Системный промпт <span className="text-red-500">*</span>
                 </Label>
                 <Textarea
@@ -317,72 +562,20 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                     if (errors.prompt) setErrors(prev => ({...prev, prompt: ''}));
                   }}
                   readOnly={!isEditing || !agent?.isCustom}
-                  className={`mt-1 min-h-24 sm:min-h-32 font-mono text-sm ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''} ${errors.prompt ? 'border-red-500' : ''}`}
-                  placeholder="Введите системный промпт, который определяет поведение вашего агента..."
+                  className={`mt-1 min-h-32 font-mono text-sm ${(!isEditing || !agent?.isCustom) ? 'bg-muted/30' : ''} ${errors.prompt ? 'border-red-500' : ''}`}
+                  placeholder="Введите системный промпт, который определяет поведение и роль вашего агента..."
                 />
                 <div className="flex justify-between items-center mt-1">
                   {errors.prompt ? (
                     <p className="text-red-500 text-xs">{errors.prompt}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Промпт определяет как агент будет вести себя и отвечать на запросы
+                      Промпт определяет как агент будет вести себя и отвечать на запросы (минимум 10 символов)
                     </p>
                   )}
                   <span className="text-xs text-muted-foreground">
                     {editedAgent.prompt?.length || 0} символов
                   </span>
-                </div>
-              </div>
-            )}
-
-            {/* Capabilities */}
-            {(isEditing && agent?.isCustom) && (
-              <div className="space-y-4">
-                <Label className="text-sm font-medium">Возможности агента</Label>
-                <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="web-search"
-                      checked={editedAgent?.capabilities?.webSearch || false}
-                      onCheckedChange={(checked) => {
-                        setEditedAgent(prev => prev ? {
-                          ...prev,
-                          capabilities: {
-                            ...prev.capabilities,
-                            webSearch: checked as boolean
-                          }
-                        } : null);
-                      }}
-                    />
-                    <Label htmlFor="web-search" className="text-sm">
-                      Web Search
-                    </Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground ml-6">
-                    Позволяет агенту искать актуальную информацию в интернете
-                  </p>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="deep-research"
-                      checked={editedAgent?.capabilities?.deepResearch || false}
-                      onCheckedChange={(checked) => {
-                        setEditedAgent(prev => prev ? {
-                          ...prev,
-                          capabilities: {
-                            ...prev.capabilities,
-                            deepResearch: checked as boolean
-                          }
-                        } : null);
-                      }}
-                    />
-                    <Label htmlFor="deep-research" className="text-sm">
-                      Deep Research
-                    </Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground ml-6">
-                    Включает углубленный анализ и исследование темы
-                  </p>
                 </div>
               </div>
             )}
@@ -394,13 +587,13 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                 <div className="space-y-2">
                   {editedAgent?.capabilities?.webSearch && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Search className="w-4 h-4 text-muted-foreground" />
+                      <Globe className="w-4 h-4 text-blue-600" />
                       <span>Web Search</span>
                     </div>
                   )}
                   {editedAgent?.capabilities?.deepResearch && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Brain className="w-4 h-4 text-muted-foreground" />
+                      <BookOpen className="w-4 h-4 text-purple-600" />
                       <span>Deep Research</span>
                     </div>
                   )}
@@ -452,25 +645,42 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
 
           {/* Actions */}
           {agent?.isCustom && (
-            <div className="flex justify-end gap-2 pt-4 mt-6 border-t">
-              {isEditing ? (
+            <div className="flex justify-between gap-2 pt-4 border-t">
+              <Button 
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Удалить
+              </Button>
+              
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button 
+                    variant="outline"
+                    onClick={handleCancel}
+                  >
+                    Отмена
+                  </Button>
+                )}
                 <Button 
-                  onClick={handleSave}
-                  disabled={!editedAgent?.name || !editedAgent?.description || !editedAgent?.prompt}
-                  className="w-full sm:w-auto"
+                  onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                  disabled={isEditing && (!editedAgent?.name || !editedAgent?.description || !editedAgent?.prompt)}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Сохранить изменения
+                  {isEditing ? (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Сохранить изменения
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Редактировать
+                    </>
+                  )}
                 </Button>
-              ) : (
-                <Button 
-                  onClick={() => setIsEditing(true)}
-                  className="w-full sm:w-auto"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Редактировать
-                </Button>
-              )}
+              </div>
             </div>
           )}
         </div>
