@@ -440,16 +440,15 @@ const Playground = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto h-[calc(100vh-120px)] flex flex-col">
+      <div className="h-[calc(100vh-120px)] flex flex-col">
         
-        {/* Compact Header with Smart Agent Selector */}
-        <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-lg border">
-          <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
-            <MessageSquare className="w-5 h-5 text-primary shrink-0" />
-            <h1 className="text-lg font-semibold shrink-0">Playground</h1>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6 p-4 bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl">
+          <div className="flex items-center gap-4">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            <h1 className="text-lg font-semibold">AI Playground</h1>
             
-            {/* Smart Agent Selector - занимает всё доступное место */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-[300px]">
               <SmartAgentSelector
                 agents={userAgents}
                 selectedAgent={selectedAgent}
@@ -458,9 +457,7 @@ const Playground = () => {
             </div>
           </div>
           
-          {/* Right Actions */}
           <div className="flex items-center gap-2">
-            {/* Chat History - показываем всегда, но содержимое зависит от выбранного агента */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
@@ -472,7 +469,7 @@ const Playground = () => {
                 <div className="p-3">
                   {selectedAgent ? (
                     <>
-                      <h4 className="font-semibold mb-3">История чатов с {selectedAgent.name}</h4>
+                      <h4 className="font-semibold mb-3">История с {selectedAgent.name}</h4>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {chatSessions
                           .filter(session => session.agentId === selectedAgent.id)
@@ -484,11 +481,11 @@ const Playground = () => {
                               className="w-full justify-start text-left h-auto p-3"
                               onClick={() => setCurrentSession(session)}
                             >
-                              <div className="space-y-1">
+                              <div className="flex flex-col gap-1">
                                 <div className="text-sm font-medium">
-                                  {session.messages.length > 0 
-                                    ? session.messages[0].content.slice(0, 50) + '...'
-                                    : 'Пустой чат'
+                                  {session.messages.length > 0 ? 
+                                    session.messages[0].content.slice(0, 50) + (session.messages[0].content.length > 50 ? '...' : '') :
+                                    'Пустой чат'
                                   }
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -497,27 +494,22 @@ const Playground = () => {
                               </div>
                             </Button>
                           ))}
-                        {chatSessions.filter(s => s.agentId === selectedAgent.id).length === 0 && (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            Нет истории чатов с этим агентом
-                          </p>
-                        )}
                       </div>
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Выберите агента для просмотра истории
-                    </p>
+                    <div className="text-center text-muted-foreground py-4">
+                      <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>Выберите агента для просмотра истории</p>
+                    </div>
                   )}
                 </div>
               </PopoverContent>
             </Popover>
 
-            {/* Clear Chat Button - показываем только если есть сообщения */}
             {currentSession && currentSession.messages.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
+              <Button 
+                variant="outline" 
+                size="sm" 
                 onClick={clearChat}
                 className="gap-2"
               >
@@ -528,376 +520,233 @@ const Playground = () => {
           </div>
         </div>
 
-        {/* Chat Interface */}
-        <div className="flex-1 flex flex-col bg-background rounded-lg border shadow-sm overflow-hidden">
+        {/* Main Content */}
+        <div className="flex-1 min-h-0">
           {!selectedAgent ? (
-            /* Agent Selection State */
-            <div className="flex-1 flex items-center justify-center">
-              <Card className="max-w-md">
-                <CardHeader className="text-center">
-                  <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <CardTitle>Выберите агента</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-muted-foreground mb-4">
-                    Выберите агента из списка выше, чтобы начать разговор
+            <div className="h-full flex items-center justify-center">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6 max-w-md"
+              >
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-primary/20">
+                  <Brain className="w-10 h-10 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Выберите агента</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Выберите AI-агента из списка выше, чтобы начать работу в Playground
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </motion.div>
             </div>
           ) : (
-            /* Chat Interface */
-            <>
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
-                  {currentSession && currentSession.messages.length === 0 ? (
-                    <div className="text-center py-8">
-                      <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Начните разговор</h3>
-                      <p className="text-muted-foreground mb-6">
-                        Задайте вопрос агенту {selectedAgent.name}
-                      </p>
-                      
-                      {/* Suggested Prompts */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">Попробуйте спросить:</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl mx-auto">
-                          {suggestedPrompts.map((prompt, index) => (
-                            <Button
-                              key={index}
-                              variant="outline"
-                              size="sm"
-                              className="text-left h-auto p-3"
-                              onClick={() => setInputMessage(prompt)}
-                            >
-                              <span className="text-xs">{prompt}</span>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
+            <div className="h-full flex flex-col">
+              
+              {/* Agent Info Header */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-4 bg-gradient-to-r from-card/50 to-accent/5 rounded-xl border border-border/50 backdrop-blur-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center backdrop-blur-sm border border-primary/20">
+                    {getProviderIcon(selectedAgent.aiProvider)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold">{selectedAgent.name}</h3>
+                      <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                        {selectedAgent.type}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs border-border/50">
+                        {selectedAgent.aiProvider || 'openai'}
+                      </Badge>
                     </div>
-                  ) : (
-                    <>
-                      {/* Generation Indicator */}
-                      <AnimatePresence>
-                        {(isGenerating || isTyping) && (
-                          <GenerationIndicator
-                            isGenerating={isGenerating}
-                            isTyping={isTyping}
-                            elapsedTime={elapsedTime}
-                            providerIcon={getProviderIcon(selectedAgent?.aiProvider)}
-                          />
-                        )}
-                      </AnimatePresence>
+                    <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>
+                  </div>
+                </div>
+              </motion.div>
 
-                      {/* Messages */}
-                      <AnimatePresence>
-                        {currentSession?.messages.map((message) => (
+              {/* Content Area */}
+              <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-br from-card/30 to-accent/5 rounded-xl border border-border/50 backdrop-blur-sm">
+                
+                {/* Messages/Output Area */}
+                <div className="flex-1 min-h-0">
+                  <ScrollArea className="h-full p-6">
+                    {(!currentSession || currentSession.messages.length === 0) && !streamingContent ? (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="h-full flex flex-col items-center justify-center text-center py-12"
+                      >
+                        <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm border border-primary/20">
+                          {getProviderIcon(selectedAgent.aiProvider)}
+                        </div>
+                        <h3 className="text-lg font-semibold mb-3">
+                          Готов к работе с {selectedAgent.name}
+                        </h3>
+                        <p className="text-muted-foreground mb-8 max-w-md leading-relaxed">
+                          Введите ваш запрос ниже и получите детальный ответ от AI-агента
+                        </p>
+                        
+                        {/* Suggested Prompts */}
+                        <div className="space-y-3 w-full max-w-2xl">
+                          <p className="text-sm text-muted-foreground">Попробуйте один из этих примеров:</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {suggestedPrompts.map((prompt, index) => (
+                              <Button
+                                key={index}
+                                variant="outline"
+                                size="sm"
+                                className="text-left justify-start bg-card/50 backdrop-blur-sm border-border/50 hover:bg-accent/10 h-auto p-3"
+                                onClick={() => setInputMessage(prompt)}
+                              >
+                                <span className="text-xs">{prompt}</span>
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="space-y-8">
+                        {/* Previous Messages */}
+                        {currentSession?.messages.map((message, index) => (
                           <motion.div
                             key={message.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3 }}
-                            className={cn(
-                              "flex gap-4 group relative mb-6",
-                              message.role === 'user' ? "justify-end" : "justify-start"
-                            )}
+                            transition={{ delay: index * 0.1 }}
+                            className="space-y-4"
                           >
-                            <Card className="relative max-w-[80%] p-5 shadow-lg border bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-                              
-                              {/* Message Header */}
-                              <div className="flex items-start gap-3 mb-3">
-                                <motion.div 
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ delay: 0.1, type: "spring" }}
-                                  className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-md ring-2 ring-offset-2 ring-offset-background",
-                                    message.role === 'user' 
-                                      ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground ring-primary/20" 
-                                      : "bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground ring-secondary/20"
-                                  )}
-                                >
-                                  {message.role === 'user' ? (
-                                    <User className="w-4 h-4" />
-                                  ) : (
-                                    <Bot className="w-4 h-4" />
-                                  )}
-                                </motion.div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-semibold text-foreground">
-                                      {message.role === 'user' ? 'Вы' : selectedAgent?.name || 'AI Assistant'}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground/70 bg-muted/50 px-2 py-0.5 rounded-full">
-                                      {formatTime(message.timestamp)}
-                                    </span>
-                                  </div>
-                                  
-                                  {message.role === 'assistant' && selectedAgent && (
-                                    <motion.div 
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: 1 }}
-                                      transition={{ delay: 0.2 }}
-                                      className="flex items-center gap-1 mt-1"
-                                    >
-                                      <Badge variant="outline" className="text-xs gap-1.5 bg-background/80 backdrop-blur-sm border-primary/30">
-                                        {getProviderIcon(selectedAgent.aiProvider)}
-                                        {selectedAgent.aiModel || selectedAgent.aiProvider || 'AI'}
-                                      </Badge>
-                                    </motion.div>
-                                  )}
-                                </div>
+                            {message.role === 'user' && (
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <User className="w-4 h-4" />
+                                <span>Ваш запрос:</span>
+                                <span className="text-xs">{formatTime(message.timestamp)}</span>
                               </div>
-                              
-                              {/* Message Content */}
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                {message.role === 'user' ? (
-                                  <p className="text-foreground leading-relaxed whitespace-pre-wrap mb-0">
-                                    {message.content}
-                                  </p>
-                                ) : (
-                                  <ReactMarkdown 
+                            )}
+                            
+                            {message.role === 'user' ? (
+                              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                                <p className="leading-relaxed">{message.content}</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                    <Bot className="w-4 h-4" />
+                                    <span>Ответ {selectedAgent.name}:</span>
+                                    <span className="text-xs">{formatTime(message.timestamp)}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
+                                    onClick={() => copyMessage(message.content)}
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                                
+                                <div className="prose prose-sm max-w-none dark:prose-invert bg-card/30 border border-border/30 rounded-lg p-6 backdrop-blur-sm">
+                                  <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
                                       code: ({ node, inline, className, children, ...props }: any) => {
-                                        const content = String(children).replace(/\n$/, '');
-                                        if (inline) {
-                                          return <InlineCode>{content}</InlineCode>;
-                                        }
-                                        return <CodeBlock className={className}>{content}</CodeBlock>;
+                                        const match = /language-(\w+)/.exec(className || '');
+                                        return !inline && match ? (
+                                          <CodeBlock>{String(children).replace(/\n$/, '')}</CodeBlock>
+                                        ) : (
+                                          <InlineCode {...props}>{children}</InlineCode>
+                                        );
                                       },
-                                      blockquote: ({ children }) => (
+                                      blockquote: ({ children }: any) => (
                                         <Blockquote>{children}</Blockquote>
-                                      ),
-                                      h1: ({ children }) => (
-                                        <motion.h1 
-                                          initial={{ opacity: 0, x: -10 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 mt-6 first:mt-0"
-                                        >
-                                          {children}
-                                        </motion.h1>
-                                      ),
-                                      h2: ({ children }) => (
-                                        <motion.h2 
-                                          initial={{ opacity: 0, x: -10 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          className="text-lg font-semibold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent mb-3 mt-5 first:mt-0"
-                                        >
-                                          {children}
-                                        </motion.h2>
-                                      ),
-                                      h3: ({ children }) => (
-                                        <h3 className="text-base font-medium text-foreground mb-2 mt-4 first:mt-0">
-                                          {children}
-                                        </h3>
-                                      ),
-                                      p: ({ children }) => (
-                                        <p className="text-foreground leading-relaxed mb-3 last:mb-0">
-                                          {children}
-                                        </p>
-                                      ),
-                                      ul: ({ children }) => (
-                                        <ul className="space-y-2 text-foreground my-3">
-                                          {children}
-                                        </ul>
-                                      ),
-                                      ol: ({ children }) => (
-                                        <ol className="list-decimal list-inside space-y-2 text-foreground my-3">
-                                          {children}
-                                        </ol>
-                                      ),
-                                      li: ({ children }) => (
-                                        <motion.li 
-                                          initial={{ opacity: 0, x: -10 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          className="text-foreground flex items-start gap-2"
-                                        >
-                                          <div className="w-1.5 h-1.5 mt-2 shrink-0 bg-primary rounded-full" />
-                                          <span className="flex-1">{children}</span>
-                                        </motion.li>
-                                      ),
-                                      table: ({ children }) => (
-                                        <div className="overflow-hidden rounded-lg border border-border my-4 shadow-sm">
-                                          <div className="overflow-x-auto">
-                                            <table className="min-w-full">
-                                              {children}
-                                            </table>
-                                          </div>
-                                        </div>
-                                      ),
-                                      th: ({ children }) => (
-                                        <th className="border-r border-border px-4 py-3 bg-gradient-to-r from-muted to-muted/80 font-semibold text-left text-foreground last:border-r-0">
-                                          {children}
-                                        </th>
-                                      ),
-                                      td: ({ children }) => (
-                                        <td className="border-r border-border border-t border-border/30 px-4 py-3 text-foreground last:border-r-0">
-                                          {children}
-                                        </td>
-                                      ),
-                                      strong: ({ children }) => (
-                                        <strong className="font-semibold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                                          {children}
-                                        </strong>
-                                      ),
-                                      em: ({ children }) => (
-                                        <em className="italic text-muted-foreground">
-                                          {children}
-                                        </em>
                                       ),
                                     }}
                                   >
                                     {message.content}
                                   </ReactMarkdown>
-                                )}
+                                </div>
                               </div>
-
-                              {/* Action Buttons */}
-                              {message.role === 'assistant' && (
-                                <motion.div 
-                                  initial={{ opacity: 0, y: 10 }}
-                                  whileHover={{ opacity: 1, y: 0 }}
-                                  className="flex items-center gap-2 mt-4 pt-3 border-t border-border/30 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                                >
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => copyMessage(message.content)}
-                                    className="h-8 px-3 text-xs bg-background/80 hover:bg-background border border-border/50 hover:shadow-md transition-all"
-                                  >
-                                    <Copy className="w-3 h-3 mr-1.5" />
-                                    Копировать
-                                  </Button>
-                                </motion.div>
-                              )}
-                            </Card>
+                            )}
                           </motion.div>
                         ))}
-                      </AnimatePresence>
-                      
-                      {/* Streaming content */}
-                      {isGenerating && streamingContent && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="flex gap-4 justify-start mb-6"
-                        >
-                          <Card className="relative max-w-[80%] p-5 shadow-lg border bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm">
-                            
-                            {/* Streaming Header */}
-                            <div className="flex items-start gap-3 mb-3">
-                              <motion.div 
-                                animate={{ 
-                                  scale: [1, 1.1, 1],
-                                  boxShadow: [
-                                    "0 0 0 0 rgba(59, 130, 246, 0.5)",
-                                    "0 0 0 10px rgba(59, 130, 246, 0)",
-                                    "0 0 0 0 rgba(59, 130, 246, 0)"
-                                  ]
-                                }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-md bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground ring-2 ring-secondary/20 ring-offset-2 ring-offset-background"
-                              >
-                                <Bot className="w-4 h-4" />
-                              </motion.div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-foreground">
-                                    {selectedAgent?.name || 'AI Assistant'}
-                                  </span>
-                                  <motion.div 
-                                    animate={{ opacity: [0.5, 1, 0.5] }}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                    className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-full"
-                                  >
-                                    {[0, 1, 2].map((i) => (
-                                      <motion.div
-                                        key={i}
-                                        className="w-1 h-1 bg-primary rounded-full"
-                                        animate={{
-                                          scale: [1, 1.5, 1],
-                                          opacity: [0.5, 1, 0.5]
-                                        }}
-                                        transition={{
-                                          duration: 1,
-                                          repeat: Infinity,
-                                          delay: i * 0.2
-                                        }}
-                                      />
-                                    ))}
-                                    <span className="text-xs text-primary font-medium ml-1">Генерирую</span>
-                                  </motion.div>
-                                </div>
-                                
-                                {selectedAgent && (
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <Badge variant="outline" className="text-xs gap-1.5 bg-background/80 backdrop-blur-sm border-primary/30">
-                                      {getProviderIcon(selectedAgent.aiProvider)}
-                                      {selectedAgent.aiModel || selectedAgent.aiProvider || 'AI'}
-                                    </Badge>
-                                  </div>
-                                )}
-                              </div>
+
+                        {/* Current Streaming Response */}
+                        {streamingContent && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-3"
+                          >
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                              <Bot className="w-4 h-4" />
+                              <span>Генерирую ответ...</span>
                             </div>
                             
-                            {/* Streaming Content with typing animation */}
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <div className="prose prose-sm max-w-none dark:prose-invert bg-card/30 border border-border/30 rounded-lg p-6 backdrop-blur-sm">
                               <AnimatedMessage 
-                                content={streamingContent}
-                                isStreaming={true}
-                                className="text-foreground leading-relaxed"
+                                content={streamingContent} 
+                                isStreaming={isGenerating} 
                               />
                             </div>
-                          </Card>
-                        </motion.div>
-                      )}
-                    </>
-                  )}
+                          </motion.div>
+                        )}
 
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {/* Input Area */}
-              <div className="p-4 border-t bg-background/95 backdrop-blur-sm">
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1">
-                    <Input
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      placeholder={selectedAgent ? `Напишите сообщение для ${selectedAgent.name}...` : "Выберите агента для начала чата..."}
-                      disabled={!selectedAgent || isGenerating}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          sendMessage();
-                        }
-                      }}
-                      className="min-h-[2.5rem] resize-none bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary/50"
-                    />
-                  </div>
-                  
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!inputMessage.trim() || !selectedAgent || isGenerating}
-                    size="icon"
-                    className="h-10 w-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
+                        {/* Generation Indicator */}
+                        <AnimatePresence>
+                          {(isGenerating || isTyping) && !streamingContent && (
+                            <GenerationIndicator
+                              isGenerating={isGenerating}
+                              isTyping={isTyping}
+                              elapsedTime={elapsedTime}
+                              providerIcon={getProviderIcon(selectedAgent?.aiProvider)}
+                            />
+                          )}
+                        </AnimatePresence>
+                      </div>
                     )}
-                  </Button>
+                    <div ref={messagesEndRef} />
+                  </ScrollArea>
+                </div>
+
+                {/* Input Area */}
+                <div className="p-6 border-t border-border/50 bg-card/20 backdrop-blur-sm">
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <Input
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        placeholder={`Напишите ваш запрос для ${selectedAgent.name}...`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                        disabled={isGenerating}
+                        className="min-h-[48px] bg-background/50 backdrop-blur-sm border-border/50 text-base"
+                      />
+                    </div>
+                    <Button
+                      onClick={sendMessage}
+                      disabled={!inputMessage.trim() || isGenerating}
+                      size="lg"
+                      className="h-[48px] px-6 gap-2 bg-primary hover:bg-primary/90"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      Отправить
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
