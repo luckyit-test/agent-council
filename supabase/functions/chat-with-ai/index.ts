@@ -132,17 +132,8 @@ serve(async (req) => {
       console.log('OpenAI key found, length:', openaiKey.length);
       console.log('Calling OpenAI Chat Completions API with model:', model);
       
-      // Подготавливаем messages для Chat Completions API
-      const apiMessages = [];
+      // Подготавливаем messages для Responses API - будет сделано ниже
       
-      // Если есть агентский промпт, добавляем его как системное сообщение
-      if (agentPrompt) {
-        apiMessages.push({ role: 'system', content: agentPrompt });
-      }
-      
-      // Добавляем все сообщения
-      apiMessages.push(...messages);
-
       // Определяем параметры для OpenAI в зависимости от модели
       const isNewModel = model && (
         model.startsWith('gpt-5') || 
@@ -151,9 +142,21 @@ serve(async (req) => {
         model.includes('gpt-4.1')
       );
 
+      // Формируем input для Responses API
+      let apiInput;
+      if (agentPrompt) {
+        // Добавляем системное сообщение в массив
+        apiInput = [
+          { type: "message", role: "system", content: agentPrompt },
+          ...messages.map(msg => ({ type: "message", role: msg.role, content: msg.content }))
+        ];
+      } else {
+        apiInput = messages.map(msg => ({ type: "message", role: msg.role, content: msg.content }));
+      }
+
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        input: apiMessages,
+        input: apiInput,
         stream: stream
       };
 
@@ -182,8 +185,16 @@ serve(async (req) => {
       // Добавляем инструкции для Deep Research если включен
       if (capabilities?.deepResearch) {
         console.log('Adding deep research instructions to OpenAI request');
-        if (apiMessages[0]?.role === 'system') {
-          apiMessages[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
+        if (agentPrompt) {
+          // Дополняем агентский промпт
+          apiInput[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
+        } else {
+          // Добавляем системное сообщение с инструкциями
+          apiInput.unshift({
+            type: "message",
+            role: "system", 
+            content: "Проводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию."
+          });
         }
       }
       
