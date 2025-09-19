@@ -142,37 +142,32 @@ serve(async (req) => {
         model.includes('gpt-4.1')
       );
 
-      // Формируем input для Responses API согласно официальной документации
+      // Формируем input для Responses API - используем стандартный формат Chat Completions
       let apiInput;
       
       console.log('=== ФОРМИРОВАНИЕ INPUT ===');
       console.log('Messages:', JSON.stringify(messages, null, 2));
       console.log('Agent prompt:', agentPrompt);
       
-      if (messages.length === 1 && messages[0].role === 'user' && !agentPrompt) {
-        // Простой случай - одно сообщение пользователя без системного промпта
-        apiInput = messages[0].content;
-        console.log('Using simple string input:', apiInput);
-      } else {
-        // Сложный случай - формируем массив сообщений
-        apiInput = [];
-        
-        if (agentPrompt) {
-          apiInput.push({
-            role: "system",
-            content: [{ type: "input_text", text: agentPrompt }]
-          });
-        }
-        
-        // Добавляем сообщения пользователя
-        messages.forEach(msg => {
-          apiInput.push({
-            role: msg.role,
-            content: [{ type: "input_text", text: msg.content }]
-          });
+      // Формируем массив сообщений в стандартном формате
+      apiInput = [];
+      
+      if (agentPrompt) {
+        apiInput.push({
+          role: "system",
+          content: agentPrompt
         });
-        console.log('Using array input:', JSON.stringify(apiInput, null, 2));
       }
+      
+      // Добавляем сообщения пользователя
+      messages.forEach(msg => {
+        apiInput.push({
+          role: msg.role,
+          content: msg.content
+        });
+      });
+      
+      console.log('Using messages array:', JSON.stringify(apiInput, null, 2));
 
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
@@ -232,8 +227,11 @@ serve(async (req) => {
       // Обрабатываем ответ от Responses API
       let content = '';
       
-      if (data.output && data.output[0] && data.output[0].content && data.output[0].content[0]) {
-        content = data.output[0].content[0].text || '';
+      if (data.output && data.output.length > 0) {
+        const output = data.output[0];
+        if (output.content) {
+          content = output.content || '';
+        }
       }
       
       if (!content) {
