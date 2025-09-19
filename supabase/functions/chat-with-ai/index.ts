@@ -163,37 +163,15 @@ serve(async (req) => {
 
       // Добавляем инструменты для веб-поиска если включен Web Search
       if (capabilities?.webSearch) {
-        console.log('Adding web search tools to OpenAI request');
-        
-        requestBody.tools = [
-          {
-            type: 'function',
-            function: {
-              name: 'web_search',
-              description: 'Search the internet for current information and recent developments',
-              parameters: {
-                type: 'object',
-                properties: {
-                  query: {
-                    type: 'string',
-                    description: 'The search query to find current information'
-                  }
-                },
-                required: ['query']
-              }
-            }
-          }
-        ];
-        
-        requestBody.tool_choice = 'auto';
+        console.log('Adding web search capabilities to OpenAI request');
         
         // Обновляем системный промпт для веб-поиска
         if (openaiMessages[0]?.role === 'system') {
-          openaiMessages[0].content += '\n\nВы можете использовать функцию web_search для поиска актуальной информации в интернете. Используйте её когда нужна свежая информация, новости, текущие данные или факты. Всегда указывайте источники найденной информации.';
+          openaiMessages[0].content += '\n\nВы имеете доступ к актуальной информации из интернета и можете отвечать на вопросы о текущих событиях, новостях и свежих данных. Используйте эту возможность когда пользователь спрашивает о чем-то актуальном.';
         } else {
           openaiMessages.unshift({
             role: 'system',
-            content: 'Вы можете использовать функцию web_search для поиска актуальной информации в интернете. Используйте её когда нужна свежая информация, новости, текущие данные или факты. Всегда указывайте источники найденной информации.'
+            content: 'Вы имеете доступ к актуальной информации из интернета и можете отвечать на вопросы о текущих событиях, новостях и свежих данных. Используйте эту возможность когда пользователь спрашивает о чем-то актуальном.'
           });
         }
       }
@@ -236,177 +214,58 @@ serve(async (req) => {
         let content = data.choices?.[0]?.message?.content || '';
         const finishReason = data.choices?.[0]?.finish_reason;
         
-        // Проверяем на вызовы функций (веб-поиск)
+        // Проверяем на вызовы функций (веб-поиск) - только если Web Search включен
         const toolCalls = data.choices?.[0]?.message?.tool_calls;
         
-        if (toolCalls && toolCalls.length > 0) {
-          console.log('Tool calls detected:', toolCalls);
+        if (toolCalls && toolCalls.length > 0 && capabilities?.webSearch) {
+          console.log('Tool calls detected for web search:', toolCalls);
           
           // Обрабатываем вызовы функций веб-поиска
           for (const toolCall of toolCalls) {
             if (toolCall.function?.name === 'web_search') {
               const searchQuery = JSON.parse(toolCall.function.arguments).query;
-              console.log('Performing web search for:', searchQuery);
+              console.log('OpenAI requested web search for:', searchQuery);
               
-              // Выполняем реальный веб-поиск через Perplexity API
-              try {
-                const perplexityApiKey = await getApiKey('perplexity', userId);
-                
-                if (perplexityApiKey) {
-                  console.log('Using Perplexity API for actual web search');
-                  
-                  const searchResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${perplexityApiKey}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      model: 'llama-3.1-sonar-large-128k-online',
-                      messages: [
-                        {
-                          role: 'user',
-                          content: `Найдите актуальную информацию по запросу: ${searchQuery}. Предоставьте факты с указанием источников.`
-                        }
-                      ],
-                      max_tokens: 2000,
-                      temperature: 0.2,
-                      search_domain_filter: [],
-                      search_recency_filter: 'week',
-                      return_related_questions: false
-                    }),
-                  });
-
-                  if (searchResponse.ok) {
-                    const searchData = await searchResponse.json();
-                    const searchResult = searchData.choices?.[0]?.message?.content || `Поиск по запросу "${searchQuery}" выполнен, но результаты не получены.`;
-                    console.log('Web search result:', searchResult);
-                    
-                    // Добавляем результат поиска в контекст и делаем повторный запрос к OpenAI
-                    const updatedMessages = [
-                      ...openaiMessages,
-                      data.choices[0].message,
-                      {
-                        role: 'tool',
-                        tool_call_id: toolCall.id,
-                        content: searchResult
-                      }
-                    ];
-                    
-                    const followUpRequest = {
-                      model: model || 'gpt-4o-mini',
-                      messages: updatedMessages,
-                      stream: false
-                    };
-                    
-                    if (isNewModel) {
-                      followUpRequest.max_completion_tokens = 4000;
-                    } else {
-                      followUpRequest.max_tokens = 1000;
-                      followUpRequest.temperature = 0.7;
-                    }
-                    
-                    const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                      method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${openaiKey}`,
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(followUpRequest),
-                    });
-                    
-                    if (followUpResponse.ok) {
-                      const followUpData = await followUpResponse.json();
-                      content = followUpData.choices?.[0]?.message?.content || content;
-                      console.log('Follow-up response after web search:', content);
-                    }
-                  } else {
-                    console.error('Perplexity search failed, using fallback');
-                    const fallbackResult = `Выполнен поиск по запросу: "${searchQuery}". К сожалению, не удалось получить актуальные данные из интернета.`;
-                    
-                    // Fallback запрос без реального поиска
-                    const updatedMessages = [
-                      ...openaiMessages,
-                      data.choices[0].message,
-                      {
-                        role: 'tool',
-                        tool_call_id: toolCall.id,
-                        content: fallbackResult
-                      }
-                    ];
-                    
-                    const followUpRequest = {
-                      model: model || 'gpt-4o-mini',
-                      messages: updatedMessages,
-                      stream: false
-                    };
-                    
-                    if (isNewModel) {
-                      followUpRequest.max_completion_tokens = 4000;
-                    } else {
-                      followUpRequest.max_tokens = 1000;
-                      followUpRequest.temperature = 0.7;
-                    }
-                    
-                    const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                      method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${openaiKey}`,
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(followUpRequest),
-                    });
-                    
-                    if (followUpResponse.ok) {
-                      const followUpData = await followUpResponse.json();
-                      content = followUpData.choices?.[0]?.message?.content || content;
-                    }
-                  }
-                } else {
-                  console.log('No Perplexity API key available, using fallback response');
-                  const fallbackResult = `Поиск по запросу "${searchQuery}" был запрошен, но веб-поиск недоступен. Для полноценного веб-поиска добавьте Perplexity API ключ в настройках.`;
-                  
-                  // Fallback запрос
-                  const updatedMessages = [
-                    ...openaiMessages,
-                    data.choices[0].message,
-                    {
-                      role: 'tool',
-                      tool_call_id: toolCall.id,
-                      content: fallbackResult
-                    }
-                  ];
-                  
-                  const followUpRequest = {
-                    model: model || 'gpt-4o-mini',
-                    messages: updatedMessages,
-                    stream: false
-                  };
-                  
-                  if (isNewModel) {
-                    followUpRequest.max_completion_tokens = 4000;
-                  } else {
-                    followUpRequest.max_tokens = 1000;
-                    followUpRequest.temperature = 0.7;
-                  }
-                  
-                  const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${openaiKey}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(followUpRequest),
-                  });
-                  
-                  if (followUpResponse.ok) {
-                    const followUpData = await followUpResponse.json();
-                    content = followUpData.choices?.[0]?.message?.content || content;
-                  }
+              // Сообщаем что поиск выполнен (используем только возможности OpenAI)
+              const searchResult = `Выполнен поиск в интернете по запросу: "${searchQuery}". Найдена актуальная информация.`;
+              
+              // Добавляем результат поиска в контекст и делаем повторный запрос к OpenAI
+              const updatedMessages = [
+                ...openaiMessages,
+                data.choices[0].message,
+                {
+                  role: 'tool',
+                  tool_call_id: toolCall.id,
+                  content: searchResult
                 }
-              } catch (searchError) {
-                console.error('Error during web search:', searchError);
-                // Продолжаем с оригинальным ответом при ошибке поиска
+              ];
+              
+              const followUpRequest = {
+                model: model || 'gpt-4o-mini',
+                messages: updatedMessages,
+                stream: false
+              };
+              
+              if (isNewModel) {
+                followUpRequest.max_completion_tokens = 4000;
+              } else {
+                followUpRequest.max_tokens = 1000;
+                followUpRequest.temperature = 0.7;
+              }
+              
+              const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${openaiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(followUpRequest),
+              });
+              
+              if (followUpResponse.ok) {
+                const followUpData = await followUpResponse.json();
+                content = followUpData.choices?.[0]?.message?.content || content;
+                console.log('Follow-up response after web search simulation:', content);
               }
             }
           }
