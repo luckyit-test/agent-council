@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserAgent, removeUserAgent } from "@/utils/agentStorage";
 
@@ -53,6 +54,10 @@ interface Agent {
   author?: string;
   tags?: string[];
   isCustom?: boolean;
+  capabilities?: {
+    webSearch?: boolean;
+    deepResearch?: boolean;
+  };
 }
 
 interface AgentDetailDialogProps {
@@ -148,7 +153,8 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
       name: editedAgent.name,
       type: editedAgent.type,
       description: editedAgent.description,
-      prompt: editedAgent.prompt
+      prompt: editedAgent.prompt,
+      capabilities: editedAgent.capabilities
     });
     
     if (success) {
@@ -325,6 +331,79 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                   <span className="text-xs text-muted-foreground">
                     {editedAgent.prompt?.length || 0} символов
                   </span>
+                </div>
+              </div>
+            )}
+
+            {/* Capabilities */}
+            {(isEditing && agent?.isCustom) && (
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Возможности агента</Label>
+                <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="web-search"
+                      checked={editedAgent?.capabilities?.webSearch || false}
+                      onCheckedChange={(checked) => {
+                        setEditedAgent(prev => prev ? {
+                          ...prev,
+                          capabilities: {
+                            ...prev.capabilities,
+                            webSearch: checked as boolean
+                          }
+                        } : null);
+                      }}
+                    />
+                    <Label htmlFor="web-search" className="text-sm">
+                      Web Search
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-6">
+                    Позволяет агенту искать актуальную информацию в интернете
+                  </p>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="deep-research"
+                      checked={editedAgent?.capabilities?.deepResearch || false}
+                      onCheckedChange={(checked) => {
+                        setEditedAgent(prev => prev ? {
+                          ...prev,
+                          capabilities: {
+                            ...prev.capabilities,
+                            deepResearch: checked as boolean
+                          }
+                        } : null);
+                      }}
+                    />
+                    <Label htmlFor="deep-research" className="text-sm">
+                      Deep Research
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-6">
+                    Включает углубленный анализ и исследование темы
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Capabilities Display for non-custom agents */}
+            {(!isEditing || !agent?.isCustom) && (editedAgent?.capabilities?.webSearch || editedAgent?.capabilities?.deepResearch) && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Возможности агента</Label>
+                <div className="space-y-2">
+                  {editedAgent?.capabilities?.webSearch && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Search className="w-4 h-4 text-muted-foreground" />
+                      <span>Web Search</span>
+                    </div>
+                  )}
+                  {editedAgent?.capabilities?.deepResearch && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Brain className="w-4 h-4 text-muted-foreground" />
+                      <span>Deep Research</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
