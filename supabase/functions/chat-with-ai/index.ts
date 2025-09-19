@@ -187,25 +187,24 @@ serve(async (req) => {
         }
       }
       
-      response = await fetch('https://api.openai.com/v1/beta/responses', {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiKey}`,
           'Content-Type': 'application/json',
-          'OpenAI-Beta': 'responses=v1'
         },
         body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('OpenAI Responses API error:', response.status, errorData);
-        throw new Error(`OpenAI Responses API error: ${response.status} - ${errorData}`);
+        console.error('OpenAI Chat Completions API error:', response.status, errorData);
+        throw new Error(`OpenAI Chat Completions API error: ${response.status} - ${errorData}`);
       }
 
       // Если включен стриминг, возвращаем поток для фронтенда
       if (stream) {
-        console.log('Using streaming mode with Responses API');
+        console.log('Using streaming mode with Chat Completions API');
         
         return new Response(response.body, {
           headers: { 
@@ -218,11 +217,11 @@ serve(async (req) => {
       }
       
       // Не-стриминговый режим
-      console.log('Using non-streaming mode with Responses API');
+      console.log('Using non-streaming mode with Chat Completions API');
       const data = await response.json();
-      console.log('OpenAI Responses API response data:', JSON.stringify(data, null, 2));
+      console.log('OpenAI Chat Completions API response data:', JSON.stringify(data, null, 2));
       
-      // Обрабатываем ответ от Responses API
+      // Обрабатываем ответ от Chat Completions API
       let content = '';
       
       if (data.choices && data.choices[0] && data.choices[0].message) {
