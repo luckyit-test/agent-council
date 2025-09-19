@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AnimatedMessage } from "@/components/AnimatedMessage";
+import { WebSearchSources } from "@/components/WebSearchSources";
 import { CodeBlock } from "@/components/CodeBlock";
 import { Blockquote, InlineCode } from "@/components/StylizedBlocks";
 import { GenerationIndicator } from "@/components/GenerationIndicator";
@@ -27,6 +28,7 @@ import {
   Circle,
   Clock,
   Timer,
+  Globe,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUserAgents, type UserAgent } from "@/utils/agentStorage";
@@ -41,6 +43,20 @@ interface Message {
   content: string;
   timestamp: Date;
   agentId?: string;
+  webSearchResults?: WebSearchResult[];
+  metadata?: {
+    model?: string;
+    hasWebSearch?: boolean;
+    timestamp?: string;
+  };
+}
+
+interface WebSearchResult {
+  id?: string;
+  title?: string;
+  url?: string;
+  type?: string;
+  status?: string;
 }
 
 interface ChatSession {
@@ -49,6 +65,7 @@ interface ChatSession {
   agentName: string;
   messages: Message[];
   createdAt: Date;
+  context?: string; // Для сохранения контекста между сессиями
 }
 
 const Playground = () => {
@@ -65,21 +82,24 @@ const Playground = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Load user agents
+  // Load user agents and sessions
   useEffect(() => {
     const agents = getUserAgents();
     setUserAgents(agents);
     
-    // Load chat sessions from localStorage
+    // Load chat sessions from localStorage with context
     const savedSessions = localStorage.getItem('chat-sessions');
     if (savedSessions) {
       try {
         const sessions = JSON.parse(savedSessions).map((s: any) => ({
           ...s,
           createdAt: new Date(s.createdAt),
+          context: s.context || '', // Загружаем сохраненный контекст
           messages: s.messages.map((m: any) => ({
             ...m,
-            timestamp: new Date(m.timestamp)
+            timestamp: new Date(m.timestamp),
+            webSearchResults: m.webSearchResults || [],
+            metadata: m.metadata || {}
           }))
         }));
         setChatSessions(sessions);
@@ -89,10 +109,21 @@ const Playground = () => {
     }
   }, []);
 
-  // Save chat sessions to localStorage
+  // Save chat sessions to localStorage with context
   useEffect(() => {
     if (chatSessions.length > 0) {
-      localStorage.setItem('chat-sessions', JSON.stringify(chatSessions));
+      // Сохраняем только последние 10 сессий для производительности
+      const sessionsToSave = chatSessions.slice(-10).map(session => ({
+        ...session,
+        // Сохраняем контекст: последние 5 сообщений для быстрого восстановления
+        context: session.messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n'),
+        messages: session.messages.map(m => ({
+          ...m,
+          // Убираем большие данные для экономии места
+          content: m.content.length > 10000 ? m.content.substring(0, 10000) + '...' : m.content
+        }))
+      }));
+      localStorage.setItem('chat-sessions', JSON.stringify(sessionsToSave));
     }
   }, [chatSessions]);
 
@@ -190,7 +221,7 @@ const Playground = () => {
       setIsTyping(false);
       
       // Check if streaming should be used
-      const useStreaming = aiProvider === 'perplexity' || (aiProvider === 'openai' && !aiModel?.startsWith('gpt-5'));
+      const useStreaming = true; // Включаем стриминг для всех провайдеров
 
       if (useStreaming) {
         // Get current session for authorization
@@ -253,21 +284,40 @@ const Playground = () => {
                   try {
                     const parsed = JSON.parse(data);
                     
-                    // Handle different response formats
-                    let content = '';
-                    
-                    // Check if this is a complete message response (Perplexity format)
-                    if (parsed.choices && parsed.choices[0] && parsed.choices[0].message && parsed.choices[0].message.content) {
-                      // Complete response - replace all content
-                      fullContent = parsed.choices[0].message.content;
-                      setStreamingContent(fullContent);
-                    } 
-                    // Check if this is streaming delta format (OpenAI format)
-                    else if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                      // Streaming delta - append content
-                      content = parsed.choices[0].delta.content;
-                      fullContent += content;
-                      setStreamingContent(fullContent);
+                    // Handle Responses API streaming format
+                    if (parsed.responses) {
+                      // Обрабатываем ответ от Responses API
+                      try {
+                        const responsesData = JSON.parse(parsed.responses);
+                        if (responsesData.output && Array.isArray(responsesData.output)) {
+                          for (const outputItem of responsesData.output) {
+                            if (outputItem.type === 'message' && outputItem.content) {
+                              for (const contentItem of outputItem.content) {
+                                if (contentItem.type === 'output_text' && contentItem.text) {
+                                  fullContent = contentItem.text;
+                                  setStreamingContent(fullContent);
+                                }
+                              }
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        // Если это не JSON, это может быть частичный ответ
+                        fullContent += parsed.responses;
+                        setStreamingContent(fullContent);
+                      }
+                    }
+                    // Handle legacy streaming format (fallback)
+                    else if (parsed.choices && parsed.choices[0]) {
+                      if (parsed.choices[0].message && parsed.choices[0].message.content) {
+                        // Complete response - replace all content
+                        fullContent = parsed.choices[0].message.content;
+                        setStreamingContent(fullContent);
+                      } else if (parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                        // Streaming delta - append content
+                        fullContent += parsed.choices[0].delta.content;
+                        setStreamingContent(fullContent);
+                      }
                     }
                   } catch (e) {
                     console.error('Error parsing streaming data:', e);
@@ -356,7 +406,9 @@ const Playground = () => {
           role: 'assistant',
           content: data.generatedText,
           timestamp: new Date(),
-          agentId: selectedAgent.id
+          agentId: selectedAgent.id,
+          webSearchResults: data.webSearchResults,
+          metadata: data.metadata
         };
 
         let finalSession;
@@ -633,21 +685,32 @@ const Playground = () => {
                               </div>
                             ) : (
                               <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                    <Bot className="w-4 h-4" />
-                                    <span>Ответ {selectedAgent.name}:</span>
-                                    <span className="text-xs">{formatTime(message.timestamp)}</span>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
-                                    onClick={() => copyMessage(message.content)}
-                                  >
-                                    <Copy className="w-3 h-3" />
-                                  </Button>
-                                </div>
+                                   <div className="flex items-center justify-between">
+                                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                       <Bot className="w-4 h-4" />
+                                       <span>Ответ {selectedAgent.name}:</span>
+                                       <span className="text-xs">{formatTime(message.timestamp)}</span>
+                                       {message.metadata?.model && (
+                                         <Badge variant="outline" className="text-xs">
+                                           {message.metadata.model}
+                                         </Badge>
+                                       )}
+                                       {message.metadata?.hasWebSearch && (
+                                         <Badge variant="secondary" className="text-xs">
+                                           <Globe className="w-3 h-3 mr-1" />
+                                           Web Search
+                                         </Badge>
+                                       )}
+                                     </div>
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
+                                       onClick={() => copyMessage(message.content)}
+                                     >
+                                       <Copy className="w-3 h-3" />
+                                     </Button>
+                                   </div>
                                 
                                 <div className="prose prose-sm max-w-none dark:prose-invert bg-card/30 border border-border/30 rounded-lg p-6 backdrop-blur-sm">
                                   <ReactMarkdown
@@ -666,10 +729,13 @@ const Playground = () => {
                                       ),
                                     }}
                                   >
-                                    {message.content}
-                                  </ReactMarkdown>
-                                </div>
-                              </div>
+                                     {message.content}
+                                   </ReactMarkdown>
+                                   
+                                   {/* Веб-поисковые источники */}
+                                   <WebSearchSources results={message.webSearchResults} />
+                                 </div>
+                               </div>
                             )}
                           </motion.div>
                         ))}
@@ -683,7 +749,14 @@ const Playground = () => {
                           >
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
                               <Bot className="w-4 h-4" />
-                              <span>Генерирую ответ...</span>
+                               <span className="flex items-center gap-2">
+                                 Генерирую ответ...
+                                 <div className="flex gap-1">
+                                   <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
+                                   <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{animationDelay: '150ms'}}></div>
+                                   <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{animationDelay: '300ms'}}></div>
+                                 </div>
+                               </span>
                             </div>
                             
                             <div className="prose prose-sm max-w-none dark:prose-invert bg-card/30 border border-border/30 rounded-lg p-6 backdrop-blur-sm">

@@ -130,12 +130,10 @@ serve(async (req) => {
       }
 
       console.log('OpenAI key found, length:', openaiKey.length);
-      console.log('Calling OpenAI API with model:', model);
+      console.log('Calling OpenAI Chat Completions API with model:', model);
       
-      const openaiMessages = agentPrompt 
-        ? [{ role: 'system', content: agentPrompt }, ...messages]
-        : messages;
-
+      // Подготавливаем messages для Responses API - будет сделано ниже
+      
       // Определяем параметры для OpenAI в зависимости от модели
       const isNewModel = model && (
         model.startsWith('gpt-5') || 
@@ -144,47 +142,56 @@ serve(async (req) => {
         model.includes('gpt-4.1')
       );
 
-      // GPT-5 модели требуют верификации организации для стриминга
-      const shouldStream = stream && !model?.startsWith('gpt-5');
+      // Формируем input для Responses API согласно официальной документации
+      let apiInput;
+      
+      console.log('=== ФОРМИРОВАНИЕ INPUT ===');
+      console.log('Messages:', JSON.stringify(messages, null, 2));
+      console.log('Agent prompt:', agentPrompt);
+      
+      if (messages.length === 1 && messages[0].role === 'user' && !agentPrompt) {
+        // Простой случай - одно сообщение пользователя без системного промпта
+        apiInput = messages[0].content;
+        console.log('Using simple string input:', apiInput);
+      } else {
+        // Сложный случай - формируем массив сообщений
+        apiInput = [];
+        
+        if (agentPrompt) {
+          apiInput.push({
+            role: "system",
+            content: [{ type: "input_text", text: agentPrompt }]
+          });
+        }
+        
+        // Добавляем сообщения пользователя
+        messages.forEach(msg => {
+          apiInput.push({
+            role: msg.role,
+            content: [{ type: "input_text", text: msg.content }]
+          });
+        });
+        console.log('Using array input:', JSON.stringify(apiInput, null, 2));
+      }
 
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        messages: openaiMessages,
-        stream: shouldStream
+        input: apiInput
       };
-
-      // Для новых моделей используем max_completion_tokens и не передаем temperature
-      if (isNewModel) {
-        requestBody.max_completion_tokens = 4000;
-      } else {
-        requestBody.max_tokens = 1000;
-        requestBody.temperature = 0.7;
-      }
-
-      // Добавляем инструменты для веб-поиска если включен Web Search
-      if (capabilities?.webSearch) {
-        console.log('Adding web search capabilities to OpenAI request');
-        
-        // Добавляем веб-поиск как инструмент OpenAI
-        requestBody.tools = [
-          {
-            type: 'web_search'
-          }
-        ];
-        
-        requestBody.tool_choice = 'auto';
-      }
-
-      // Добавляем инструкции для Deep Research если включен
-      if (capabilities?.deepResearch) {
-        console.log('Adding deep research instructions to OpenAI request');
-        
-        if (openaiMessages[0]?.role === 'system') {
-          openaiMessages[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
-        }
-      }
       
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // НЕ добавляем stream для первоначального теста
+      // НЕ добавляем max_tokens/temperature для Responses API
+      
+      console.log('=== REQUEST BODY ===');
+      console.log('Full request body:', JSON.stringify(requestBody, null, 2));
+
+      // НЕ добавляем tools пока что для упрощения
+
+      // НЕ добавляем deep research пока что
+      console.log('=== ОТПРАВКА ЗАПРОСА ===');
+      console.log('Final request body:', JSON.stringify(requestBody, null, 2));
+      
+      response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiKey}`,
@@ -193,62 +200,50 @@ serve(async (req) => {
         body: JSON.stringify(requestBody),
       });
 
+      console.log('=== ОТВЕТ ОТ OPENAI ===');
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('OpenAI API error:', response.status, errorData);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+        console.error('OpenAI Responses API error:', response.status, errorData);
+        throw new Error(`OpenAI Responses API error: ${response.status} - ${errorData}`);
       }
 
-      if (shouldStream) {
-        console.log('Using streaming mode');
+      // Принудительно отключаем стриминг для тестирования
+      if (false) { // if (stream) {
+        console.log('Using streaming mode with Responses API');
+        
         return new Response(response.body, {
-          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+          },
         });
-      } else {
-        console.log('Using non-streaming mode');
-        const data = await response.json();
-        console.log('OpenAI response data:', JSON.stringify(data, null, 2));
-        
-        // Обрабатываем случай когда контент пустой из-за использования reasoning tokens
-        let content = data.choices?.[0]?.message?.content || '';
-        const finishReason = data.choices?.[0]?.finish_reason;
-        
-        
-        if (!content && finishReason === 'length') {
-          // Если контент пустой из-за лимита reasoning tokens, запрашиваем более простой ответ
-          console.log('Empty content due to reasoning tokens limit, making simplified request...');
-          
-          const simplifiedRequest = {
-            model: model || 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: 'Дайте краткий и четкий ответ на вопрос пользователя.' },
-              ...messages.slice(-2) // Берем только последние 2 сообщения для контекста
-            ],
-            max_completion_tokens: isNewModel ? 1000 : undefined,
-            max_tokens: !isNewModel ? 500 : undefined,
-            stream: false
-          };
-          
-          const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openaiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(simplifiedRequest),
-          });
-          
-          if (retryResponse.ok) {
-            const retryData = await retryResponse.json();
-            console.log('Retry response:', retryData);
-            content = retryData.choices?.[0]?.message?.content || 'Unable to generate response';
-          }
-        }
-        
-        generatedText = content;
-        console.log('Final generatedText value:', generatedText);
-        console.log('Final generatedText length:', generatedText?.length);
       }
+      
+      // Не-стриминговый режим
+      console.log('Using non-streaming mode with Responses API');
+      const data = await response.json();
+      console.log('OpenAI Responses API response data:', JSON.stringify(data, null, 2));
+      
+      // Обрабатываем ответ от Responses API
+      let content = '';
+      
+      if (data.output && data.output[0] && data.output[0].content && data.output[0].content[0]) {
+        content = data.output[0].content[0].text || '';
+      }
+      
+      if (!content) {
+        console.log('No content found in response, using fallback');
+        content = 'Ответ получен, но контент не удалось извлечь из ответа API.';
+      }
+      
+      generatedText = content;
+      console.log('Final generatedText value:', generatedText);
+      console.log('Final generatedText length:', generatedText?.length);
       
     } else if (provider === 'deepseek') {
       const deepseekKey = await getApiKey('deepseek', userId);
@@ -405,6 +400,24 @@ serve(async (req) => {
     console.log('Final generatedText value:', generatedText);
     console.log('Final generatedText length:', generatedText?.length);
     
+    // Возвращаем расширенный ответ с метаданными для OpenAI
+    if (provider === 'openai') {
+      const responseData = {
+        generatedText,
+        webSearchResults: provider === 'openai' && capabilities?.webSearch ? [] : undefined, // Будет заполнено выше для OpenAI
+        metadata: {
+          model: model || 'gpt-4o-mini',
+          hasWebSearch: capabilities?.webSearch,
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      return new Response(JSON.stringify(responseData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Для других провайдеров возвращаем стандартный ответ
     return new Response(JSON.stringify({ generatedText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
