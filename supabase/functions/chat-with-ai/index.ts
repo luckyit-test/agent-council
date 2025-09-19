@@ -201,20 +201,83 @@ serve(async (req) => {
         throw new Error(`OpenAI Responses API error: ${response.status} - ${errorData}`);
       }
 
-      console.log('Using OpenAI Responses API');
+      // Если включен стриминг, возвращаем поток для фронтенда
+      if (stream) {
+        console.log('Using streaming mode with Responses API');
+        
+        // Создаем ReadableStream для обработки ответа от Responses API
+        const readableStream = new ReadableStream({
+          async start(controller) {
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            
+            if (!reader) {
+              controller.close();
+              return;
+            }
+
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                
+                // Передаем данные как есть - фронтенд будет обрабатывать формат Responses API
+                controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({
+                  responses: chunk
+                })}\n\n`));
+              }
+              
+              controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+              controller.close();
+            } catch (error) {
+              console.error('Streaming error:', error);
+              controller.error(error);
+            }
+          }
+        });
+
+        return new Response(readableStream, {
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+          },
+        });
+      }
+      
+      // Не-стриминговый режим
+      console.log('Using non-streaming mode with Responses API');
       const data = await response.json();
       console.log('OpenAI Responses API response data:', JSON.stringify(data, null, 2));
       
       // Обрабатываем ответ от Responses API
       let content = '';
+      let webSearchResults = [];
       
       if (data.output && Array.isArray(data.output)) {
-        // Ищем текстовый контент в output массиве
+        // Ищем текстовый контент и веб-поисковые результаты в output массиве
         for (const outputItem of data.output) {
-          if (outputItem.type === 'message' && outputItem.content) {
+          if (outputItem.type === 'web_search_call') {
+            // Собираем информацию о веб-поиске
+            webSearchResults.push({
+              id: outputItem.id,
+              status: outputItem.status
+            });
+          } else if (outputItem.type === 'message' && outputItem.content) {
             for (const contentItem of outputItem.content) {
               if (contentItem.type === 'output_text' && contentItem.text) {
                 content += contentItem.text;
+              }
+              // Собираем аннотации с источниками
+              if (contentItem.annotations) {
+                webSearchResults.push(...contentItem.annotations.map(ann => ({
+                  title: ann.title,
+                  url: ann.url,
+                  type: ann.type
+                })));
               }
             }
           }
@@ -222,17 +285,13 @@ serve(async (req) => {
       }
       
       if (!content) {
-        // Пробуем найти контент в других возможных местах структуры ответа
-        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-          content = data.choices[0].message.content;
-        } else {
-          console.log('No content found in response, using fallback');
-          content = 'Ответ получен, но контент не удалось извлечь из ответа API.';
-        }
+        console.log('No content found in response, using fallback');
+        content = 'Ответ получен, но контент не удалось извлечь из ответа API.';
       }
       
       generatedText = content;
       console.log('Final generatedText value:', generatedText);
+      console.log('Web search results:', webSearchResults);
       console.log('Final generatedText length:', generatedText?.length);
       
     } else if (provider === 'deepseek') {
@@ -390,6 +449,24 @@ serve(async (req) => {
     console.log('Final generatedText value:', generatedText);
     console.log('Final generatedText length:', generatedText?.length);
     
+    // Возвращаем расширенный ответ с метаданными для OpenAI
+    if (provider === 'openai') {
+      const responseData = {
+        generatedText,
+        webSearchResults: provider === 'openai' && capabilities?.webSearch ? [] : undefined, // Будет заполнено выше для OpenAI
+        metadata: {
+          model: model || 'gpt-4o-mini',
+          hasWebSearch: capabilities?.webSearch,
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      return new Response(JSON.stringify(responseData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Для других провайдеров возвращаем стандартный ответ
     return new Response(JSON.stringify({ generatedText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
