@@ -153,7 +153,7 @@ serve(async (req) => {
 
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        input: apiMessages,
+        messages: apiMessages,
         stream: stream
       };
 
@@ -187,11 +187,12 @@ serve(async (req) => {
         }
       }
       
-      response = await fetch('https://api.openai.com/v1/responses', {
+      response = await fetch('https://api.openai.com/v1/beta/responses', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiKey}`,
           'Content-Type': 'application/json',
+          'OpenAI-Beta': 'responses=v1'
         },
         body: JSON.stringify(requestBody),
       });
