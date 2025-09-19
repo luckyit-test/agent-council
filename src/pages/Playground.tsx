@@ -221,7 +221,7 @@ const Playground = () => {
       setIsTyping(false);
       
       // Check if streaming should be used
-      const useStreaming = aiProvider === 'perplexity' || (aiProvider === 'openai' && !aiModel?.startsWith('gpt-5'));
+      const useStreaming = true; // Включаем стриминг для всех провайдеров
 
       if (useStreaming) {
         // Get current session for authorization
