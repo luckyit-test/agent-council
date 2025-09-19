@@ -176,60 +176,18 @@ serve(async (req) => {
 
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        input: apiInput,
-        stream: stream
+        input: apiInput
       };
+      
+      // НЕ добавляем stream для первоначального теста
+      // НЕ добавляем max_tokens/temperature для Responses API
       
       console.log('=== REQUEST BODY ===');
       console.log('Full request body:', JSON.stringify(requestBody, null, 2));
 
-      // Для новых моделей используем max_completion_tokens и не передаем temperature
-      if (isNewModel) {
-        requestBody.max_completion_tokens = 4000;
-      } else {
-        requestBody.max_tokens = 1000;
-        requestBody.temperature = 0.7;
-      }
+      // НЕ добавляем tools пока что для упрощения
 
-      // Добавляем веб-поиск если включен Web Search (для новых моделей)
-      if (capabilities?.webSearch && isNewModel) {
-        console.log('Adding web search capabilities to OpenAI request');
-        requestBody.tools = [
-          {
-            type: 'web_search'
-          }
-        ];
-      }
-
-      // Добавляем инструкции для Deep Research если включен
-      if (capabilities?.deepResearch) {
-        console.log('Adding deep research instructions to OpenAI request');
-        if (typeof apiInput === 'string') {
-          // Преобразуем в массив и добавляем системный промпт
-          apiInput = [
-            {
-              role: "system",
-              content: [{ type: "input_text", text: "Проводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию." }]
-            },
-            {
-              role: "user", 
-              content: [{ type: "input_text", text: apiInput }]
-            }
-          ];
-        } else if (Array.isArray(apiInput)) {
-          // Найдем системное сообщение и дополним его
-          const systemMsg = apiInput.find(msg => msg.role === 'system');
-          if (systemMsg) {
-            systemMsg.content[0].text += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
-          } else {
-            // Добавляем системное сообщение в начало
-            apiInput.unshift({
-              role: "system",
-              content: [{ type: "input_text", text: "Проводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию." }]
-            });
-          }
-        }
-      }
+      // НЕ добавляем deep research пока что
       console.log('=== ОТПРАВКА ЗАПРОСА ===');
       console.log('Final request body:', JSON.stringify(requestBody, null, 2));
       
@@ -252,8 +210,8 @@ serve(async (req) => {
         throw new Error(`OpenAI Responses API error: ${response.status} - ${errorData}`);
       }
 
-      // Если включен стриминг, возвращаем поток для фронтенда
-      if (stream) {
+      // Принудительно отключаем стриминг для тестирования
+      if (false) { // if (stream) {
         console.log('Using streaming mode with Responses API');
         
         return new Response(response.body, {
