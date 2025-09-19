@@ -130,24 +130,18 @@ serve(async (req) => {
       }
 
       console.log('OpenAI key found, length:', openaiKey.length);
-      console.log('Calling OpenAI Responses API with model:', model);
+      console.log('Calling OpenAI Chat Completions API with model:', model);
       
-      // Подготавливаем input для Responses API
-      let input = '';
+      // Подготавливаем messages для Chat Completions API
+      const apiMessages = [];
       
       // Если есть агентский промпт, добавляем его как системное сообщение
       if (agentPrompt) {
-        input += `System: ${agentPrompt}\n\n`;
+        apiMessages.push({ role: 'system', content: agentPrompt });
       }
       
-      // Конвертируем messages в input строку для Responses API
-      for (const message of messages) {
-        if (message.role === 'user') {
-          input += `User: ${message.content}\n\n`;
-        } else if (message.role === 'assistant') {
-          input += `Assistant: ${message.content}\n\n`;
-        }
-      }
+      // Добавляем все сообщения
+      apiMessages.push(...messages);
 
       // Определяем параметры для OpenAI в зависимости от модели
       const isNewModel = model && (
@@ -159,24 +153,28 @@ serve(async (req) => {
 
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        input: input.trim(),
-        stream: stream // Добавляем поддержку стриминга
+        messages: apiMessages,
+        stream: stream
       };
 
-      // Для новых моделей используем max_output_tokens и не передаем temperature
+      // Для новых моделей используем max_completion_tokens и не передаем temperature
       if (isNewModel) {
-        requestBody.max_output_tokens = 4000;
+        requestBody.max_completion_tokens = 4000;
       } else {
         requestBody.max_tokens = 1000;
         requestBody.temperature = 0.7;
       }
 
-      // Добавляем веб-поиск если включен Web Search
-      if (capabilities?.webSearch) {
-        console.log('Adding web search capabilities to OpenAI Responses API');
+      // Добавляем веб-поиск если включен Web Search (для новых моделей)
+      if (capabilities?.webSearch && isNewModel) {
+        console.log('Adding web search capabilities to OpenAI request');
         requestBody.tools = [
           {
-            type: 'web_search'
+            type: 'function',
+            function: {
+              name: 'web_search',
+              description: 'Search the web for current information'
+            }
           }
         ];
       }
@@ -184,10 +182,12 @@ serve(async (req) => {
       // Добавляем инструкции для Deep Research если включен
       if (capabilities?.deepResearch) {
         console.log('Adding deep research instructions to OpenAI request');
-        requestBody.input += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
+        if (apiMessages[0]?.role === 'system') {
+          apiMessages[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
+        }
       }
       
-      response = await fetch('https://api.openai.com/v1/responses', {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiKey}`,
@@ -198,60 +198,15 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('OpenAI Responses API error:', response.status, errorData);
-        throw new Error(`OpenAI Responses API error: ${response.status} - ${errorData}`);
+        console.error('OpenAI Chat Completions API error:', response.status, errorData);
+        throw new Error(`OpenAI Chat Completions API error: ${response.status} - ${errorData}`);
       }
 
       // Если включен стриминг, возвращаем поток для фронтенда
       if (stream) {
-        console.log('Using streaming mode with Responses API');
+        console.log('Using streaming mode with Chat Completions API');
         
-        // Создаем ReadableStream для обработки ответа от Responses API
-        const readableStream = new ReadableStream({
-          async start(controller) {
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-            
-            if (!reader) {
-              controller.close();
-              return;
-            }
-
-            try {
-              let buffer = '';
-              
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                  if (line.trim() === '') continue;
-                  if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
-                    if (data === '[DONE]') {
-                      controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
-                      continue;
-                    }
-                    
-                    // Передаем данные в формате Server-Sent Events
-                    controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
-                  }
-                }
-              }
-              
-              controller.close();
-            } catch (error) {
-              console.error('Streaming error:', error);
-              controller.error(error);
-            }
-          }
-        });
-
-        return new Response(readableStream, {
+        return new Response(response.body, {
           headers: { 
             ...corsHeaders, 
             'Content-Type': 'text/event-stream',
@@ -262,39 +217,15 @@ serve(async (req) => {
       }
       
       // Не-стриминговый режим
-      console.log('Using non-streaming mode with Responses API');
+      console.log('Using non-streaming mode with Chat Completions API');
       const data = await response.json();
-      console.log('OpenAI Responses API response data:', JSON.stringify(data, null, 2));
+      console.log('OpenAI Chat Completions API response data:', JSON.stringify(data, null, 2));
       
-      // Обрабатываем ответ от Responses API
+      // Обрабатываем ответ от Chat Completions API
       let content = '';
-      let webSearchResults = [];
       
-      if (data.output && Array.isArray(data.output)) {
-        // Ищем текстовый контент и веб-поисковые результаты в output массиве
-        for (const outputItem of data.output) {
-          if (outputItem.type === 'web_search_call') {
-            // Собираем информацию о веб-поиске
-            webSearchResults.push({
-              id: outputItem.id,
-              status: outputItem.status
-            });
-          } else if (outputItem.type === 'message' && outputItem.content) {
-            for (const contentItem of outputItem.content) {
-              if (contentItem.type === 'output_text' && contentItem.text) {
-                content += contentItem.text;
-              }
-              // Собираем аннотации с источниками
-              if (contentItem.annotations) {
-                webSearchResults.push(...contentItem.annotations.map(ann => ({
-                  title: ann.title,
-                  url: ann.url,
-                  type: ann.type
-                })));
-              }
-            }
-          }
-        }
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        content = data.choices[0].message.content || '';
       }
       
       if (!content) {
@@ -304,7 +235,6 @@ serve(async (req) => {
       
       generatedText = content;
       console.log('Final generatedText value:', generatedText);
-      console.log('Web search results:', webSearchResults);
       console.log('Final generatedText length:', generatedText?.length);
       
     } else if (provider === 'deepseek') {
