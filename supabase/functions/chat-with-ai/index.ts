@@ -153,7 +153,7 @@ serve(async (req) => {
 
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        messages: apiMessages,
+        input: apiMessages,
         stream: stream
       };
 
