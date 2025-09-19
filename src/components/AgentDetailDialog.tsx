@@ -507,24 +507,6 @@ export const AgentDetailDialog = ({ agent, open, onOpenChange, onAgentUpdated }:
                       </p>
                     </div>
                   </div>
-                  
-                  {(editedAgent?.capabilities?.webSearch || editedAgent?.capabilities?.deepResearch) && (
-                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-                      <div className="flex items-start gap-2">
-                        <BookOpen className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-                        <div className="text-sm">
-                          <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">
-                            Требуется настройка API-ключей
-                          </p>
-                          <p className="text-amber-700 dark:text-amber-200">
-                            {editedAgent?.capabilities?.webSearch && "Web Search требует настройки Perplexity API. "}
-                            {editedAgent?.capabilities?.deepResearch && "Deep Research требует настройки дополнительных API ключей. "}
-                            Убедитесь, что нужные ключи настроены в разделе API-ключи.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
