@@ -161,19 +161,18 @@ serve(async (req) => {
         requestBody.temperature = 0.7;
       }
 
-      // Обновляем системный промпт для веб-поиска если включен Web Search
+      // Добавляем инструменты для веб-поиска если включен Web Search
       if (capabilities?.webSearch) {
         console.log('Adding web search capabilities to OpenAI request');
         
-        // Обновляем системный промпт для веб-поиска
-        if (openaiMessages[0]?.role === 'system') {
-          openaiMessages[0].content += '\n\nВы имеете доступ к актуальной информации и можете отвечать на вопросы о текущих событиях, новостях и свежих данных, используя свои знания и возможности.';
-        } else {
-          openaiMessages.unshift({
-            role: 'system',
-            content: 'Вы имеете доступ к актуальной информации и можете отвечать на вопросы о текущих событиях, новостях и свежих данных, используя свои знания и возможности.'
-          });
-        }
+        // Добавляем веб-поиск как инструмент OpenAI
+        requestBody.tools = [
+          {
+            type: 'web_search'
+          }
+        ];
+        
+        requestBody.tool_choice = 'auto';
       }
 
       // Добавляем инструкции для Deep Research если включен
