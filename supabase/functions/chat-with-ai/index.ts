@@ -159,7 +159,8 @@ serve(async (req) => {
 
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        input: input.trim()
+        input: input.trim(),
+        stream: stream // Добавляем поддержку стриминга
       };
 
       // Для новых моделей используем max_output_tokens и не передаем temperature
@@ -217,19 +218,31 @@ serve(async (req) => {
             }
 
             try {
+              let buffer = '';
+              
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-                
-                // Передаем данные как есть - фронтенд будет обрабатывать формат Responses API
-                controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({
-                  responses: chunk
-                })}\n\n`));
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  if (line.trim() === '') continue;
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') {
+                      controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                      continue;
+                    }
+                    
+                    // Передаем данные в формате Server-Sent Events
+                    controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
+                  }
+                }
               }
               
-              controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
               controller.close();
             } catch (error) {
               console.error('Streaming error:', error);
