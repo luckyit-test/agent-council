@@ -130,11 +130,24 @@ serve(async (req) => {
       }
 
       console.log('OpenAI key found, length:', openaiKey.length);
-      console.log('Calling OpenAI API with model:', model);
+      console.log('Calling OpenAI Responses API with model:', model);
       
-      const openaiMessages = agentPrompt 
-        ? [{ role: 'system', content: agentPrompt }, ...messages]
-        : messages;
+      // Подготавливаем input для Responses API
+      let input = '';
+      
+      // Если есть агентский промпт, добавляем его как системное сообщение
+      if (agentPrompt) {
+        input += `System: ${agentPrompt}\n\n`;
+      }
+      
+      // Конвертируем messages в input строку для Responses API
+      for (const message of messages) {
+        if (message.role === 'user') {
+          input += `User: ${message.content}\n\n`;
+        } else if (message.role === 'assistant') {
+          input += `Assistant: ${message.content}\n\n`;
+        }
+      }
 
       // Определяем параметры для OpenAI в зависимости от модели
       const isNewModel = model && (
@@ -144,13 +157,9 @@ serve(async (req) => {
         model.includes('gpt-4.1')
       );
 
-      // GPT-5 модели требуют верификации организации для стриминга
-      const shouldStream = stream && !model?.startsWith('gpt-5');
-
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
-        messages: openaiMessages,
-        stream: shouldStream
+        input: input.trim()
       };
 
       // Для новых моделей используем max_completion_tokens и не передаем temperature
@@ -161,30 +170,23 @@ serve(async (req) => {
         requestBody.temperature = 0.7;
       }
 
-      // Добавляем инструменты для веб-поиска если включен Web Search
+      // Добавляем веб-поиск если включен Web Search
       if (capabilities?.webSearch) {
-        console.log('Adding web search capabilities to OpenAI request');
-        
-        // Добавляем веб-поиск как инструмент OpenAI
+        console.log('Adding web search capabilities to OpenAI Responses API');
         requestBody.tools = [
           {
             type: 'web_search'
           }
         ];
-        
-        requestBody.tool_choice = 'auto';
       }
 
       // Добавляем инструкции для Deep Research если включен
       if (capabilities?.deepResearch) {
         console.log('Adding deep research instructions to OpenAI request');
-        
-        if (openaiMessages[0]?.role === 'system') {
-          openaiMessages[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
-        }
+        requestBody.input += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
       }
       
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
+      response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiKey}`,
@@ -195,60 +197,43 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('OpenAI API error:', response.status, errorData);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+        console.error('OpenAI Responses API error:', response.status, errorData);
+        throw new Error(`OpenAI Responses API error: ${response.status} - ${errorData}`);
       }
 
-      if (shouldStream) {
-        console.log('Using streaming mode');
-        return new Response(response.body, {
-          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
-        });
-      } else {
-        console.log('Using non-streaming mode');
-        const data = await response.json();
-        console.log('OpenAI response data:', JSON.stringify(data, null, 2));
-        
-        // Обрабатываем случай когда контент пустой из-за использования reasoning tokens
-        let content = data.choices?.[0]?.message?.content || '';
-        const finishReason = data.choices?.[0]?.finish_reason;
-        
-        
-        if (!content && finishReason === 'length') {
-          // Если контент пустой из-за лимита reasoning tokens, запрашиваем более простой ответ
-          console.log('Empty content due to reasoning tokens limit, making simplified request...');
-          
-          const simplifiedRequest = {
-            model: model || 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: 'Дайте краткий и четкий ответ на вопрос пользователя.' },
-              ...messages.slice(-2) // Берем только последние 2 сообщения для контекста
-            ],
-            max_completion_tokens: isNewModel ? 1000 : undefined,
-            max_tokens: !isNewModel ? 500 : undefined,
-            stream: false
-          };
-          
-          const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openaiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(simplifiedRequest),
-          });
-          
-          if (retryResponse.ok) {
-            const retryData = await retryResponse.json();
-            console.log('Retry response:', retryData);
-            content = retryData.choices?.[0]?.message?.content || 'Unable to generate response';
+      console.log('Using OpenAI Responses API');
+      const data = await response.json();
+      console.log('OpenAI Responses API response data:', JSON.stringify(data, null, 2));
+      
+      // Обрабатываем ответ от Responses API
+      let content = '';
+      
+      if (data.output && Array.isArray(data.output)) {
+        // Ищем текстовый контент в output массиве
+        for (const outputItem of data.output) {
+          if (outputItem.type === 'message' && outputItem.content) {
+            for (const contentItem of outputItem.content) {
+              if (contentItem.type === 'output_text' && contentItem.text) {
+                content += contentItem.text;
+              }
+            }
           }
         }
-        
-        generatedText = content;
-        console.log('Final generatedText value:', generatedText);
-        console.log('Final generatedText length:', generatedText?.length);
       }
+      
+      if (!content) {
+        // Пробуем найти контент в других возможных местах структуры ответа
+        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+          content = data.choices[0].message.content;
+        } else {
+          console.log('No content found in response, using fallback');
+          content = 'Ответ получен, но контент не удалось извлечь из ответа API.';
+        }
+      }
+      
+      generatedText = content;
+      console.log('Final generatedText value:', generatedText);
+      console.log('Final generatedText length:', generatedText?.length);
       
     } else if (provider === 'deepseek') {
       const deepseekKey = await getApiKey('deepseek', userId);
