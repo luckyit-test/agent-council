@@ -7,17 +7,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Создаем Supabase клиент для получения API ключей из БД
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
 serve(async (req) => {
   console.log('=== EDGE FUNCTION STARTED ===');
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
-  
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling CORS preflight');
@@ -26,127 +25,95 @@ serve(async (req) => {
 
   try {
     console.log('=== PARSING REQUEST BODY ===');
-    let requestBody;
-    try {
-      requestBody = await req.json();
-      console.log('Request body parsed successfully');
-      console.log('Request body keys:', Object.keys(requestBody));
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      return new Response(JSON.stringify({ 
-        error: 'Invalid JSON in request body',
-        details: parseError.message 
-      }), {
+    const requestBody = await req.json();
+    console.log('Request body parsed successfully');
+    console.log('Request body keys:', Object.keys(requestBody));
+
+    const { messages, provider, model, agentPrompt, capabilities, stream, testMode } = requestBody;
+
+    console.log('Model:', model);
+    console.log('Provider:', provider);
+    console.log('Messages count:', messages?.length);
+    console.log('Test Mode:', testMode);
+    console.log('Has agentPrompt:', !!agentPrompt);
+    console.log('Capabilities:', capabilities);
+    console.log('Stream:', stream);
+
+    console.log('=== AUTH HEADER DEBUG ===');
+    const authHeader = req.headers.get('authorization');
+    console.log('Auth header exists:', !!authHeader);
+    console.log('Token length:', authHeader?.length);
+    console.log('Token first 50 chars:', authHeader?.substring(0, 50));
+
+    console.log('=== CHAT REQUEST START ===');
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: 'Messages are required and must be an array' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
-    const { 
-      messages, 
-      provider = 'openai', 
-      model = 'gpt-4o-mini', 
-      stream = false, 
-      agentPrompt,
-      capabilities = {},
-      testMode
-    } = requestBody;
-    
-    console.log('=== CHAT REQUEST START ===');
-    console.log('Provider:', provider);
-    console.log('Model:', model);
-    console.log('Stream:', stream);
-    console.log('Test Mode:', testMode);
-    console.log('Has agentPrompt:', !!agentPrompt);
-    console.log('Capabilities:', capabilities);
-    console.log('Messages count:', messages?.length || 0);
 
-    // Функция для получения API ключа из базы данных
-    const getApiKey = async (providerName: string, userId?: string) => {
-      try {        
-        console.log(`=== Getting API key for ${providerName} ===`);
-        console.log('User ID:', userId);
-        
-        if (!userId) {
-          console.error('No user ID available for getApiKey');
-          return null;
-        }
-        
-        // ОТЛАДКА: Показываем все ключи в базе для этого провайдера
-        const { data: allProviderKeys, error: allError } = await supabase
-          .from('user_api_keys')
-          .select('user_id, provider, created_at')
-          .eq('provider', providerName);
-        
-        console.log(`All ${providerName} keys in database:`, allProviderKeys);
-        console.log(`All keys error:`, allError);
-        
-        // Ищем конкретный ключ пользователя
-        const { data, error } = await supabase
-          .from('user_api_keys')
-          .select('api_key')
-          .eq('provider', providerName)
-          .eq('user_id', userId)
-          .single();
-
-        console.log(`Specific query for user ${userId} and provider ${providerName}:`);
-        console.log('Result data:', data);
-        console.log('Result error:', error);
-
-        if (error) {
-          console.error(`API key query failed:`, error);
-          return null;
-        }
-
-        if (!data || !data.api_key) {
-          console.error(`No API key data returned`);
-          return null;
-        }
-
-        console.log(`SUCCESS: ${providerName} API key found, length:`, data.api_key.length);
-        return data.api_key;
-      } catch (err) {
-        console.error(`Exception in getApiKey for ${providerName}:`, err);
-        return null;
-      }
-    };
-
-    // Получаем user ID из JWT токена один раз
-    const authHeader = req.headers.get('authorization');
+    // Extract user ID from JWT token
     let userId = null;
-    
-    console.log('=== AUTH HEADER DEBUG ===');
-    console.log('Auth header exists:', !!authHeader);
     
     if (authHeader) {
       try {
         const token = authHeader.replace('Bearer ', '');
-        console.log('Token length:', token.length);
-        console.log('Token first 50 chars:', token.substring(0, 50));
+        const { data: { user }, error } = await supabase.auth.getUser(token);
         
-        if (!token || token === 'null' || token === 'undefined') {
-          console.error('Invalid token received:', token);
-          return new Response(JSON.stringify({ error: 'Invalid authentication token' }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+        if (error) {
+          console.error('Error getting user from token:', error);
+        } else if (user) {
+          userId = user.id;
+          console.log('User ID from JWT:', userId);
+          console.log('User role:', user.role);
         }
-        
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userId = payload.sub;
-        console.log('User ID from JWT:', userId);
-        console.log('User role:', payload.role);
-      } catch (e) {
-        console.error('Error parsing JWT:', e);
-        console.error('Auth header that failed:', authHeader?.substring(0, 50));
-        return new Response(JSON.stringify({ error: 'Failed to parse authentication token' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      } catch (error) {
+        console.error('Error parsing JWT token:', error);
       }
-    } else {
-      console.error('No authorization header found');
     }
+
+    console.log('User ID:', userId);
+
+    // Function to get API key from database
+    const getApiKey = async (provider: string, userId: string) => {
+      console.log(`=== Getting API key for ${provider} ===`);
+      
+      try {
+        // First, check all openai keys in database for debugging
+        const { data: allKeys, error: allKeysError } = await supabase
+          .from('user_api_keys')
+          .select('user_id, provider, created_at')
+          .eq('provider', provider);
+        
+        console.log(`All ${provider} keys in database:`, JSON.stringify(allKeys, null, 2));
+        console.log('All keys error:', allKeysError);
+
+        // Get specific API key for this user and provider
+        console.log(`Specific query for user ${userId} and provider ${provider}:`);
+        const { data, error } = await supabase
+          .from('user_api_keys')
+          .select('api_key')
+          .eq('user_id', userId)
+          .eq('provider', provider)
+          .single();
+
+        console.log('Result error:', error);
+        console.log('Result data:', data);
+
+        if (error || !data) {
+          console.log(`${provider.toUpperCase()} API key not found for user ${userId}`);
+          return null;
+        }
+
+        console.log(`SUCCESS: ${provider} API key found, length:`, data.api_key?.length);
+        return data.api_key;
+      } catch (error) {
+        console.error(`Error fetching ${provider} API key:`, error);
+        return null;
+      }
+    };
 
     let response;
     let generatedText = '';
@@ -163,118 +130,180 @@ serve(async (req) => {
       }
 
       console.log('OpenAI key found, length:', openaiKey.length);
-      console.log('Calling OpenAI API with model:', model);
       
-      const openaiMessages = agentPrompt 
-        ? [{ role: 'system', content: agentPrompt }, ...messages]
-        : messages;
-
-      // Определяем параметры для OpenAI в зависимости от модели
-      const isNewModel = model && (
-        model.startsWith('gpt-5') || 
-        model.startsWith('o3') || 
-        model.startsWith('o4') ||
-        model.includes('gpt-4.1')
-      );
-
-      // GPT-5 модели требуют верификации организации для стриминга
-      const shouldStream = stream && !model?.startsWith('gpt-5');
-
-      const requestBody: any = {
-        model: model || 'gpt-4o-mini',
-        messages: openaiMessages,
-        stream: shouldStream
-      };
-
-      // Для новых моделей используем max_completion_tokens и не передаем temperature
-      if (isNewModel) {
-        requestBody.max_completion_tokens = 4000;  // Увеличиваем лимит токенов для GPT-5
-        // Новые модели не поддерживают temperature
-      } else {
-        requestBody.max_tokens = 1000;
-        requestBody.temperature = 0.7;
-      }
-
-      // Добавляем параметры для Web Search и Deep Research если включены
-      if (capabilities.webSearch && model?.includes('gpt')) {
-        // Для OpenAI можно использовать функции или инструкции в системном промпте
-        if (openaiMessages[0]?.role === 'system') {
-          openaiMessages[0].content += '\n\nВы можете использовать веб-поиск для получения актуальной информации.';
-        }
-      }
-
-      if (capabilities.deepResearch && model?.includes('gpt')) {
-        // Для глубокого исследования добавляем инструкции
-        if (openaiMessages[0]?.role === 'system') {
-          openaiMessages[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения.';
-        }
-      }
-      
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('OpenAI API error:', response.status, errorData);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
-      }
-
-      if (shouldStream) {
-        console.log('Using streaming mode');
-        return new Response(response.body, {
-          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
-        });
-      } else {
-        console.log('Using non-streaming mode');
-        const data = await response.json();
-        console.log('OpenAI response data:', JSON.stringify(data, null, 2));
+      // Если включен Web Search или Deep Research, переключаемся на Perplexity API для веб-поиска
+      if (capabilities?.webSearch || capabilities?.deepResearch) {
+        console.log('Web Search или Deep Research включен, используем Perplexity API');
         
-        // Обрабатываем случай когда контент пустой из-за использования reasoning tokens
-        let content = data.choices?.[0]?.message?.content || '';
-        const finishReason = data.choices?.[0]?.finish_reason;
+        const perplexityApiKey = await getApiKey('perplexity', userId);
         
-        if (!content && finishReason === 'length') {
-          // Если контент пустой из-за лимита reasoning tokens, запрашиваем более простой ответ
-          console.log('Empty content due to reasoning tokens limit, making simplified request...');
-          
-          const simplifiedRequest = {
-            model: model || 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: 'Дайте краткий и четкий ответ на вопрос пользователя.' },
-              ...messages.slice(-2) // Берем только последние 2 сообщения для контекста
-            ],
-            max_completion_tokens: isNewModel ? 2000 : undefined,
-            max_tokens: isNewModel ? undefined : 1000,
-            temperature: isNewModel ? undefined : 0.3
-          };
-          
-          const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openaiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(simplifiedRequest),
+        if (!perplexityApiKey) {
+          console.error('Perplexity API key not found, but required for Web Search');
+          return new Response(JSON.stringify({ 
+            error: 'Web Search требует настройки Perplexity API ключа. Добавьте его в разделе API Ключи.' 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
-          
-          if (retryResponse.ok) {
-            const retryData = await retryResponse.json();
-            content = retryData.choices?.[0]?.message?.content || 'Извините, не удалось сгенерировать ответ.';
-            console.log('Retry response successful:', content.substring(0, 100));
-          } else {
-            content = 'Извините, произошла ошибка при генерации ответа.';
-          }
+        }
+
+        const apiMessages = agentPrompt 
+          ? [{ role: 'system', content: agentPrompt }, ...messages]
+          : messages;
+
+        console.log('Calling Perplexity API for Web Search with model: llama-3.1-sonar-large-128k-online');
+        
+        const perplexityBody: any = {
+          model: capabilities.deepResearch ? 'llama-3.1-sonar-huge-128k-online' : 'llama-3.1-sonar-large-128k-online',
+          messages: apiMessages,
+          stream,
+          max_tokens: capabilities.deepResearch ? 6000 : 4000,
+          temperature: capabilities.deepResearch ? 0.1 : 0.2,
+          top_p: 0.9,
+          return_images: false,
+          return_related_questions: true,
+          frequency_penalty: 1,
+          presence_penalty: 0,
+          search_domain_filter: [],  // Убираем ограничения на домены для веб-поиска
+          search_recency_filter: 'week'  // Более свежие результаты
+        };
+
+        // Дополняем системный промпт для глубокого исследования
+        if (capabilities.deepResearch && apiMessages[0]?.role === 'system') {
+          apiMessages[0].content += '\n\nПроведите глубокое исследование с анализом множества источников, рассмотрите различные точки зрения и предоставьте всестороннее освещение темы с указанием источников.';
+        }
+
+        // Дополняем системный промпт для веб-поиска
+        if (capabilities.webSearch && apiMessages[0]?.role === 'system') {
+          apiMessages[0].content += '\n\nИспользуйте актуальную информацию из интернета для ответа на вопросы пользователя. Всегда указывайте источники информации.';
+        }
+
+        response = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${perplexityApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(perplexityBody),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('=== PERPLEXITY API ERROR DETAILS ===');
+          console.error('Status:', response.status);
+          console.error('Status Text:', response.statusText);
+          console.error('Error Response:', errorText);
+          throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
+        }
+
+        if (stream) {
+          return new Response(response.body, {
+            headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+          });
+        } else {
+          const data = await response.json();
+          console.log('Perplexity API response received for Web Search');
+          generatedText = data.choices?.[0]?.message?.content || 'No response generated';
         }
         
-        generatedText = content;
-        console.log('Final generatedText value:', generatedText);
-        console.log('Final generatedText length:', generatedText.length);
+      } else {
+        // Обычный OpenAI запрос без веб-поиска
+        console.log('Calling OpenAI API with model:', model);
+        
+        const openaiMessages = agentPrompt 
+          ? [{ role: 'system', content: agentPrompt }, ...messages]
+          : messages;
+
+        // Определяем параметры для OpenAI в зависимости от модели
+        const isNewModel = model && (
+          model.startsWith('gpt-5') || 
+          model.startsWith('o3') || 
+          model.startsWith('o4') ||
+          model.includes('gpt-4.1')
+        );
+
+        // GPT-5 модели требуют верификации организации для стриминга
+        const shouldStream = stream && !model?.startsWith('gpt-5');
+
+        const requestBody: any = {
+          model: model || 'gpt-4o-mini',
+          messages: openaiMessages,
+          stream: shouldStream
+        };
+
+        // Для новых моделей используем max_completion_tokens и не передаем temperature
+        if (isNewModel) {
+          requestBody.max_completion_tokens = 4000;  // Увеличиваем лимит токенов для GPT-5
+          // Новые модели не поддерживают temperature
+        } else {
+          requestBody.max_tokens = 1000;
+          requestBody.temperature = 0.7;
+        }
+        
+        response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error('OpenAI API error:', response.status, errorData);
+          throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+        }
+
+        if (shouldStream) {
+          console.log('Using streaming mode');
+          return new Response(response.body, {
+            headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+          });
+        } else {
+          console.log('Using non-streaming mode');
+          const data = await response.json();
+          console.log('OpenAI response data:', JSON.stringify(data, null, 2));
+          
+          // Обрабатываем случай когда контент пустой из-за использования reasoning tokens
+          let content = data.choices?.[0]?.message?.content || '';
+          const finishReason = data.choices?.[0]?.finish_reason;
+          
+          if (!content && finishReason === 'length') {
+            // Если контент пустой из-за лимита reasoning tokens, запрашиваем более простой ответ
+            console.log('Empty content due to reasoning tokens limit, making simplified request...');
+            
+            const simplifiedRequest = {
+              model: model || 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: 'Дайте краткий и четкий ответ на вопрос пользователя.' },
+                ...messages.slice(-2) // Берем только последние 2 сообщения для контекста
+              ],
+              max_completion_tokens: isNewModel ? 1000 : undefined,
+              max_tokens: !isNewModel ? 500 : undefined,
+              stream: false
+            };
+            
+            const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openaiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(simplifiedRequest),
+            });
+            
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              console.log('Retry response:', retryData);
+              content = retryData.choices?.[0]?.message?.content || 'Unable to generate response';
+            }
+          }
+          
+          generatedText = content;
+          console.log('Final generatedText value:', generatedText);
+          console.log('Final generatedText length:', generatedText?.length);
+        }
       }
       
     } else if (provider === 'deepseek') {
@@ -294,7 +323,7 @@ serve(async (req) => {
       const deepseekMessages = agentPrompt 
         ? [{ role: 'system', content: agentPrompt }, ...messages]
         : messages;
-      
+
       response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: {
@@ -370,7 +399,7 @@ serve(async (req) => {
       };
 
       // Настройки для Web Search
-      if (capabilities.webSearch) {
+      if (capabilities?.webSearch) {
         perplexityBody.search_domain_filter = [];  // Убираем ограничения на домены
         perplexityBody.search_recency_filter = 'week';  // Более свежие результаты
         perplexityBody.return_related_questions = true;  // Возвращаем связанные вопросы
@@ -380,7 +409,7 @@ serve(async (req) => {
       }
 
       // Настройки для Deep Research
-      if (capabilities.deepResearch) {
+      if (capabilities?.deepResearch) {
         perplexityBody.model = 'llama-3.1-sonar-huge-128k-online';  // Более мощная модель
         perplexityBody.max_tokens = 6000;  // Больше токенов для подробного ответа
         perplexityBody.search_recency_filter = 'week';
