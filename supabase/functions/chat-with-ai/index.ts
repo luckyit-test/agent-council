@@ -12,6 +12,15 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
+function sseHeaders() {
+  return {
+    ...corsHeaders,
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+  };
+}
+
 serve(async (req) => {
   console.log('=== EDGE FUNCTION STARTED ===');
   console.log('Request method:', req.method);
@@ -81,17 +90,6 @@ serve(async (req) => {
       console.log(`=== Getting API key for ${provider} ===`);
       
       try {
-        // First, check all openai keys in database for debugging
-        const { data: allKeys, error: allKeysError } = await supabase
-          .from('user_api_keys')
-          .select('user_id, provider, created_at')
-          .eq('provider', provider);
-        
-        console.log(`All ${provider} keys in database:`, JSON.stringify(allKeys, null, 2));
-        console.log('All keys error:', allKeysError);
-
-        // Get specific API key for this user and provider
-        console.log(`Specific query for user ${userId} and provider ${provider}:`);
         const { data, error } = await supabase
           .from('user_api_keys')
           .select('api_key')
@@ -130,57 +128,70 @@ serve(async (req) => {
       }
 
       console.log('OpenAI key found, length:', openaiKey.length);
-      console.log('Calling OpenAI Chat Completions API with model:', model);
+      console.log('Calling OpenAI Responses API with model:', model);
       
-      // Подготавливаем messages для Responses API - будет сделано ниже
-      
-      // Определяем параметры для OpenAI в зависимости от модели
-      const isNewModel = model && (
-        model.startsWith('gpt-5') || 
-        model.startsWith('o3') || 
-        model.startsWith('o4') ||
-        model.includes('gpt-4.1')
-      );
-
-      // Формируем input для Responses API - простая строка
-      let apiInput = '';
+      // Формируем input для Responses API согласно рабочему примеру
+      let apiInput = [];
       
       console.log('=== ФОРМИРОВАНИЕ INPUT ===');
       console.log('Messages:', JSON.stringify(messages, null, 2));
       console.log('Agent prompt:', agentPrompt);
       
-      // Объединяем системный промпт и сообщения в одну строку
+      // Добавляем системный промпт если есть
       if (agentPrompt) {
-        apiInput += agentPrompt + '\n\n';
+        apiInput.push({
+          role: "system",
+          content: [{ type: "text", text: agentPrompt }]
+        });
       }
       
-      // Добавляем все сообщения как текст
+      // Добавляем сообщения пользователя
       messages.forEach(msg => {
         if (msg.role === 'user') {
-          apiInput += 'User: ' + msg.content + '\n';
-        } else if (msg.role === 'assistant') {
-          apiInput += 'Assistant: ' + msg.content + '\n';
+          const content = [{ type: "text", text: msg.content }];
+          
+          // Добавляем инструкции для web search если включен
+          if (capabilities?.webSearch) {
+            content.push({ 
+              type: "input_text", 
+              text: "Пожалуйста, используй web search и дай 3–5 релевантных ссылок с краткими пояснениями." 
+            });
+          }
+          
+          apiInput.push({
+            role: msg.role,
+            content: content
+          });
+        } else {
+          apiInput.push({
+            role: msg.role,
+            content: [{ type: "text", text: msg.content }]
+          });
         }
       });
       
-      console.log('Using string input:', apiInput);
+      console.log('Using input array:', JSON.stringify(apiInput, null, 2));
 
       const requestBody: any = {
-        model: 'gpt-5',
-        input: apiInput
+        model: model || 'gpt-4o-mini',
+        input: apiInput,
+        temperature: 0.2,
+        stream
       };
       
-      // НЕ добавляем stream для первоначального теста
-      // НЕ добавляем max_tokens/temperature для Responses API
+      // Добавляем web search если включен
+      if (capabilities?.webSearch) {
+        requestBody.tools = [{ type: "web_search" }];
+        requestBody.web_search_options = {
+          max_results: 5
+        };
+        requestBody.tool_choice = "auto";
+      }
       
       console.log('=== REQUEST BODY ===');
       console.log('Full request body:', JSON.stringify(requestBody, null, 2));
 
-      // НЕ добавляем tools пока что для упрощения
-
-      // НЕ добавляем deep research пока что
       console.log('=== ОТПРАВКА ЗАПРОСА ===');
-      console.log('Final request body:', JSON.stringify(requestBody, null, 2));
       
       response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -201,17 +212,12 @@ serve(async (req) => {
         throw new Error(`OpenAI Responses API error: ${response.status} - ${errorData}`);
       }
 
-      // Принудительно отключаем стриминг для тестирования
-      if (false) { // if (stream) {
+      // Для стриминга возвращаем поток напрямую
+      if (stream) {
         console.log('Using streaming mode with Responses API');
         
         return new Response(response.body, {
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-          },
+          headers: sseHeaders(),
         });
       }
       
@@ -219,8 +225,6 @@ serve(async (req) => {
       console.log('Using non-streaming mode with Responses API');
       const data = await response.json();
       console.log('OpenAI Responses API response data:', JSON.stringify(data, null, 2));
-      console.log('Response data keys:', Object.keys(data));
-      console.log('Output array:', data.output);
       
       // Обрабатываем ответ от Responses API согласно примеру
       let content = '';
