@@ -145,9 +145,14 @@ serve(async (req) => {
       // Формируем input для Responses API согласно официальной документации
       let apiInput;
       
+      console.log('=== ФОРМИРОВАНИЕ INPUT ===');
+      console.log('Messages:', JSON.stringify(messages, null, 2));
+      console.log('Agent prompt:', agentPrompt);
+      
       if (messages.length === 1 && messages[0].role === 'user' && !agentPrompt) {
         // Простой случай - одно сообщение пользователя без системного промпта
         apiInput = messages[0].content;
+        console.log('Using simple string input:', apiInput);
       } else {
         // Сложный случай - формируем массив сообщений
         apiInput = [];
@@ -166,6 +171,7 @@ serve(async (req) => {
             content: [{ type: "input_text", text: msg.content }]
           });
         });
+        console.log('Using array input:', JSON.stringify(apiInput, null, 2));
       }
 
       const requestBody: any = {
@@ -173,6 +179,9 @@ serve(async (req) => {
         input: apiInput,
         stream: stream
       };
+      
+      console.log('=== REQUEST BODY ===');
+      console.log('Full request body:', JSON.stringify(requestBody, null, 2));
 
       // Для новых моделей используем max_completion_tokens и не передаем temperature
       if (isNewModel) {
@@ -221,6 +230,8 @@ serve(async (req) => {
           }
         }
       }
+      console.log('=== ОТПРАВКА ЗАПРОСА ===');
+      console.log('Final request body:', JSON.stringify(requestBody, null, 2));
       
       response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -230,6 +241,10 @@ serve(async (req) => {
         },
         body: JSON.stringify(requestBody),
       });
+
+      console.log('=== ОТВЕТ ОТ OPENAI ===');
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorData = await response.text();
