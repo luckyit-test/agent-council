@@ -182,9 +182,6 @@ serve(async (req) => {
       // Добавляем web search если включен
       if (capabilities?.webSearch) {
         requestBody.tools = [{ type: "web_search" }];
-        requestBody.web_search_options = {
-          max_results: 5
-        };
         requestBody.tool_choice = "auto";
       }
       
