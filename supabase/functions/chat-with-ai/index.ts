@@ -162,9 +162,9 @@ serve(async (req) => {
         input: input.trim()
       };
 
-      // Для новых моделей используем max_completion_tokens и не передаем temperature
+      // Для новых моделей используем max_output_tokens и не передаем temperature
       if (isNewModel) {
-        requestBody.max_completion_tokens = 4000;
+        requestBody.max_output_tokens = 4000;
       } else {
         requestBody.max_tokens = 1000;
         requestBody.temperature = 0.7;
