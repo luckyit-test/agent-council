@@ -142,16 +142,30 @@ serve(async (req) => {
         model.includes('gpt-4.1')
       );
 
-      // Формируем input для Responses API
+      // Формируем input для Responses API согласно официальной документации
       let apiInput;
-      if (agentPrompt) {
-        // Добавляем системное сообщение в массив
-        apiInput = [
-          { type: "message", role: "system", content: agentPrompt },
-          ...messages.map(msg => ({ type: "message", role: msg.role, content: msg.content }))
-        ];
+      
+      if (messages.length === 1 && messages[0].role === 'user' && !agentPrompt) {
+        // Простой случай - одно сообщение пользователя без системного промпта
+        apiInput = messages[0].content;
       } else {
-        apiInput = messages.map(msg => ({ type: "message", role: msg.role, content: msg.content }));
+        // Сложный случай - формируем массив сообщений
+        apiInput = [];
+        
+        if (agentPrompt) {
+          apiInput.push({
+            role: "system",
+            content: [{ type: "input_text", text: agentPrompt }]
+          });
+        }
+        
+        // Добавляем сообщения пользователя
+        messages.forEach(msg => {
+          apiInput.push({
+            role: msg.role,
+            content: [{ type: "input_text", text: msg.content }]
+          });
+        });
       }
 
       const requestBody: any = {
@@ -173,11 +187,7 @@ serve(async (req) => {
         console.log('Adding web search capabilities to OpenAI request');
         requestBody.tools = [
           {
-            type: 'function',
-            function: {
-              name: 'web_search',
-              description: 'Search the web for current information'
-            }
+            type: 'web_search'
           }
         ];
       }
@@ -185,16 +195,30 @@ serve(async (req) => {
       // Добавляем инструкции для Deep Research если включен
       if (capabilities?.deepResearch) {
         console.log('Adding deep research instructions to OpenAI request');
-        if (agentPrompt) {
-          // Дополняем агентский промпт
-          apiInput[0].content += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
-        } else {
-          // Добавляем системное сообщение с инструкциями
-          apiInput.unshift({
-            type: "message",
-            role: "system", 
-            content: "Проводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию."
-          });
+        if (typeof apiInput === 'string') {
+          // Преобразуем в массив и добавляем системный промпт
+          apiInput = [
+            {
+              role: "system",
+              content: [{ type: "input_text", text: "Проводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию." }]
+            },
+            {
+              role: "user", 
+              content: [{ type: "input_text", text: apiInput }]
+            }
+          ];
+        } else if (Array.isArray(apiInput)) {
+          // Найдем системное сообщение и дополним его
+          const systemMsg = apiInput.find(msg => msg.role === 'system');
+          if (systemMsg) {
+            systemMsg.content[0].text += '\n\nПроводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию.';
+          } else {
+            // Добавляем системное сообщение в начало
+            apiInput.unshift({
+              role: "system",
+              content: [{ type: "input_text", text: "Проводите глубокий анализ с использованием множественных источников и различных точек зрения. Рассматривайте тему всесторонне, анализируйте различные аспекты и предоставляйте детальную информацию." }]
+            });
+          }
         }
       }
       
