@@ -84,7 +84,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
   const [agentType, setAgentType] = useState("");
   const [agentDescription, setAgentDescription] = useState("");
   const [agentPrompt, setAgentPrompt] = useState("");
-  const [aiProvider, setAiProvider] = useState("");
+  const [aiProvider, setAiProvider] = useState("lovable"); // Default to Lovable AI
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [enableWebSearch, setEnableWebSearch] = useState(false);
   const [enableDeepResearch, setEnableDeepResearch] = useState(false);

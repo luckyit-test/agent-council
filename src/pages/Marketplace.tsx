@@ -25,6 +25,8 @@ const marketplaceAgents = [
     tags: ["финансы", "отчеты", "прогнозы"],
     capabilities: "P&L анализ, баланс, денежные потоки, прогнозирование",
     capabilitiesObject: { webSearch: true, deepResearch: false },
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.8,
     downloads: 15420,
     prompt: `Ты - профессиональный финансовый аналитик с многолетним опытом работы в ведущих финансовых компаниях. 
@@ -57,6 +59,8 @@ const marketplaceAgents = [
     author: "Marketing Pro",
     tags: ["маркетинг", "ROI", "кампании"],
     capabilities: "CAC, LTV, атрибуция, когортный анализ",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.7,
     downloads: 12890,
     prompt: `Ты - эксперт по маркетинговой аналитике с глубоким пониманием digital-каналов и метрик.
@@ -90,6 +94,8 @@ const marketplaceAgents = [
     author: "HR Tech",
     tags: ["HR", "персонал", "метрики"],
     capabilities: "Turnover анализ, engagement, performance tracking",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.6,
     downloads: 8950,
     prompt: `Ты - HR аналитик, специализирующийся на People Analytics и принятии data-driven решений в управлении персоналом.
@@ -127,6 +133,8 @@ const marketplaceAgents = [
     author: "Product Team",
     tags: ["продукт", "метрики", "UX"],
     capabilities: "Retention, funnel analysis, A/B тесты",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.9,
     downloads: 18750,
     prompt: `Ты - продуктовый аналитик с экспертизой в user behavior analysis и product growth.
@@ -166,6 +174,8 @@ ACTIONABLE INSIGHTS:
     author: "Content Studio",
     tags: ["копирайтинг", "контент", "продажи"],
     capabilities: "Лендинги, email-рассылки, соцсети, продающие тексты",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.8,
     downloads: 22100,
     prompt: `Ты - мастер копирайтинга с экспертизой в direct response маркетинге и нейропсихологии продаж.
@@ -205,6 +215,8 @@ ACTIONABLE INSIGHTS:
     author: "Social Media Pro",
     tags: ["SMM", "соцсети", "стратегия"],
     capabilities: "Instagram, TikTok, LinkedIn, контент-планы",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.7,
     downloads: 16200,
     prompt: `Ты - SMM стратег с глубоким пониманием алгоритмов соцсетей и вирусного контента.
@@ -244,6 +256,8 @@ CONTENT PILLARS:
     author: "Video Production",
     tags: ["видео", "сценарии", "продакшн"],
     capabilities: "YouTube, TikTok, реклама, образовательные видео",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.6,
     downloads: 11400,
     prompt: `Ты - видеопродюсер с экспертизой в создании вирусного и вовлекающего видеоконтента.
@@ -290,6 +304,8 @@ PRODUCTION PLANNING:
     author: "Strategy Consulting",
     tags: ["стратегия", "процессы", "консалтинг"],
     capabilities: "Business model design, процессное улучшение, стратегия",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.9,
     downloads: 9800,
     prompt: `Ты - стратегический бизнес-консультант с опытом в McKinsey-style problem solving.
@@ -336,6 +352,8 @@ DELIVERABLES:
     author: "Sales Automation",
     tags: ["CRM", "автоматизация", "продажи"],
     capabilities: "Salesforce, HubSpot, воронки продаж, lead scoring",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.5,
     downloads: 7300,
     prompt: `Ты - эксперт по CRM системам и sales automation с фокусом на повышение конверсии.
@@ -381,6 +399,8 @@ RESULT: увеличение sales productivity на 25-40% через automatio
     author: "PM Community",
     tags: ["проекты", "agile", "scrum"],
     capabilities: "Scrum, Kanban, планирование, риск-менеджмент",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.7,
     downloads: 13600,
     prompt: `Ты - сертифицированный Project Manager (PMP, CSM) с экспертизой в Agile/Scrum методологиях.
@@ -429,6 +449,8 @@ DELIVERABLES: четкие roadmaps, efficient team processes, on-time delivery`
     author: "Learning & Development",
     tags: ["обучение", "тренинги", "развитие"],
     capabilities: "Курсы, вебинары, soft skills, onboarding",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.8,
     downloads: 10200,
     prompt: `Ты - корпоративный тренер и L&D специалист с экспертизой в adult learning principles.
@@ -475,6 +497,8 @@ DIGITAL TOOLS: LMS platforms, video creation, interactive presentations`
     author: "Career Development",
     tags: ["карьера", "коучинг", "развитие"],
     capabilities: "Карьерное планирование, навыки, личный бренд",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.6,
     downloads: 8900,
     prompt: `Ты - профессиональный карьерный коуч с экспертизой в personal branding и career transition.
@@ -524,6 +548,8 @@ OUTCOME: четкий career roadmap с actionable steps и measurable progress`
     author: "Legal Tech",
     tags: ["право", "документы", "консультации"],
     capabilities: "Договоры, compliance, корпоративное право",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.7,
     downloads: 6500,
     prompt: `Ты - юридический консультант с экспертизой в корпоративном праве и contract management.
@@ -571,6 +597,8 @@ DISCLAIMER: Всегда рекомендуй консультацию с licens
     author: "Investment Research",
     tags: ["инвестиции", "портфель", "риски"],
     capabilities: "Due diligence, оценка активов, портфельный анализ",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.8,
     downloads: 9100,
     prompt: `Ты - инвестиционный аналитик с экспертизой в equity research и portfolio management.
@@ -620,6 +648,8 @@ REPORTING:
     author: "Digital Marketing",
     tags: ["SEO", "поисковая оптимизация", "трафик"],
     capabilities: "Technical SEO, контент, link building, аудиты",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.9,
     downloads: 17800,
     prompt: `Ты - SEO эксперт с глубоким пониманием алгоритмов поисковых систем и technical optimization.
@@ -673,6 +703,8 @@ TOOLS: Google Search Console, Ahrefs, SEMrush, Screaming Frog`
     author: "Frontend Guild",
     tags: ["React", "архитектура", "компоненты"],
     capabilities: "React, TypeScript, состояние, производительность",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.9,
     downloads: 14200,
     prompt: `Ты - Senior Frontend Архитектор с экспертизой в React экосистеме и современных паттернах разработки.
@@ -721,6 +753,8 @@ TYPESCRIPT MASTERY:
     author: "DevOps Team",
     tags: ["DevOps", "Docker", "CI/CD"],
     capabilities: "Docker, K8s, AWS, GitHub Actions, мониторинг",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.8,
     downloads: 11800,
     prompt: `Ты - DevOps инженер с экспертизой в cloud-native технологиях и infrastructure as code.
@@ -766,6 +800,8 @@ SECURITY & COMPLIANCE:
     author: "Backend Team",
     tags: ["API", "базы данных", "архитектура"],
     capabilities: "REST/GraphQL, PostgreSQL, микросервисы, производительность",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.7,
     downloads: 13600,
     prompt: `Ты - Senior Backend разработчик с экспертизой в distributed systems и высоконагруженных приложениях.
@@ -816,6 +852,8 @@ DATABASE EXPERTISE:
     author: "QA Guild",
     tags: ["тестирование", "автоматизация", "QA"],
     capabilities: "Playwright, Cypress, API тесты, CI/CD integration",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.6,
     downloads: 9400,
     prompt: `Ты - QA Automation Engineer с экспертизой в современных testing frameworks и качественных процессах.
@@ -868,6 +906,8 @@ PERFORMANCE TESTING:
     author: "Growth Team",
     tags: ["growth hacking", "viral", "эксперименты"],
     capabilities: "AARRR метрики, A/B тесты, viral loops, retention",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.9,
     downloads: 16500,
     prompt: `Ты - Growth Hacker с экспертизой в продуктовом росте и data-driven экспериментах.
@@ -924,6 +964,8 @@ EXPERIMENTATION:
     author: "Performance Marketing",
     tags: ["PPC", "Facebook Ads", "Google Ads"],
     capabilities: "Google Ads, Facebook, TikTok Ads, attribution, оптимизация",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.8,
     downloads: 18900,
     prompt: `Ты - Performance Marketing специалист с экспертизой в paid advertising и ROAS optimization.
@@ -980,6 +1022,8 @@ AUTOMATION:
     author: "Email Marketing Pro",
     tags: ["email", "автоматизация", "newsletters"],
     capabilities: "Mailchimp, ConvertKit, segmentation, deliverability",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.7,
     downloads: 12300,
     prompt: `Ты - Email Marketing специалист с экспертизой в automation и high-converting email campaigns.
@@ -1044,6 +1088,8 @@ ANALYTICS:
     author: "Brand Strategy",
     tags: ["бренд", "позиционирование", "стратегия"],
     capabilities: "Brand strategy, позиционирование, tone of voice, guidelines",
+    aiProvider: "lovable",
+    aiModel: "google/gemini-2.5-pro",
     rating: 4.6,
     downloads: 8700,
     prompt: `Ты - Brand Manager с экспертизой в brand strategy и создании сильных brand identities.
