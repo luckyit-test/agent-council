@@ -133,10 +133,17 @@ serve(async (req) => {
       // Формируем messages для стандартного API
       const apiMessages = [];
       
-      if (agentPrompt) {
+      // Базовый промпт агента с инструкциями о доступе к актуальным данным
+      let systemPrompt = agentPrompt || '';
+      
+      if (capabilities?.webSearch) {
+        systemPrompt += '\n\n⚠️ ВАЖНО: У тебя есть доступ к актуальным данным из интернета. Когда пользователь спрашивает о текущих событиях, ценах, курсах, новостях или любой другой информации в реальном времени - используй свои возможности веб-поиска для получения самых свежих данных. Всегда предоставляй актуальную информацию, а не данные из своей базы знаний.';
+      }
+      
+      if (systemPrompt) {
         apiMessages.push({
           role: "system",
-          content: agentPrompt
+          content: systemPrompt
         });
       }
       
@@ -152,28 +159,6 @@ serve(async (req) => {
         messages: apiMessages,
         stream
       };
-      
-      // Add web search tool if enabled
-      if (capabilities?.webSearch) {
-        requestBody.tools = [{
-          type: "function",
-          function: {
-            name: "web_search",
-            description: "Search the web for current information",
-            parameters: {
-              type: "object",
-              properties: {
-                query: {
-                  type: "string",
-                  description: "The search query"
-                }
-              },
-              required: ["query"]
-            }
-          }
-        }];
-        requestBody.tool_choice = "auto";
-      }
 
       console.log('Lovable AI request:', JSON.stringify(requestBody, null, 2));
 
