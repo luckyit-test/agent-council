@@ -24,6 +24,7 @@ const marketplaceAgents = [
     author: "AI Finance Team",
     tags: ["финансы", "отчеты", "прогнозы"],
     capabilities: "P&L анализ, баланс, денежные потоки, прогнозирование",
+    capabilitiesObject: { webSearch: true, deepResearch: false },
     rating: 4.8,
     downloads: 15420,
     prompt: `Ты - профессиональный финансовый аналитик с многолетним опытом работы в ведущих финансовых компаниях. 
@@ -44,7 +45,8 @@ const marketplaceAgents = [
 - Подкрепляй выводы конкретными расчетами
 - Указывай методологию расчетов
 - Предоставляй рекомендации для менеджмента
-- Оценивай риски и возможности`
+- Оценивай риски и возможности
+- Используй веб-поиск для получения актуальных данных о компаниях, рынках и экономике`
   },
   {
     id: "2",
@@ -1445,7 +1447,8 @@ export default function Marketplace() {
       prompt: item.prompt,
       author: item.author,
       tags: item.tags,
-      category: item.category
+      category: item.category,
+      capabilities: item.capabilitiesObject || { webSearch: true, deepResearch: false }
     });
     
     if (success) {

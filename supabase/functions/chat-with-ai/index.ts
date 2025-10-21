@@ -152,6 +152,28 @@ serve(async (req) => {
         messages: apiMessages,
         stream
       };
+      
+      // Add web search tool if enabled
+      if (capabilities?.webSearch) {
+        requestBody.tools = [{
+          type: "function",
+          function: {
+            name: "web_search",
+            description: "Search the web for current information",
+            parameters: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: "The search query"
+                }
+              },
+              required: ["query"]
+            }
+          }
+        }];
+        requestBody.tool_choice = "auto";
+      }
 
       console.log('Lovable AI request:', JSON.stringify(requestBody, null, 2));
 
