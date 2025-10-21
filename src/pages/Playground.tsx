@@ -212,9 +212,9 @@ const Playground = () => {
     setStreamingContent('');
 
     try {
-      // Determine which AI provider to use - use agent's configured provider or OpenAI as default
-      const aiProvider = selectedAgent.aiProvider || 'openai';
-      const aiModel = selectedAgent.aiModel || (aiProvider === 'openai' ? 'gpt-4o-mini' : aiProvider === 'perplexity' ? 'sonar' : 'claude-3-sonnet');
+      // Determine which AI provider to use - use agent's configured provider or Lovable AI as default
+      const aiProvider = selectedAgent.aiProvider || 'lovable';
+      const aiModel = selectedAgent.aiModel || (aiProvider === 'lovable' ? 'google/gemini-2.5-pro' : aiProvider === 'openai' ? 'gpt-4o-mini' : aiProvider === 'perplexity' ? 'sonar' : 'claude-3-sonnet');
       
       // Simulate typing delay
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -295,6 +295,18 @@ const Playground = () => {
                       fullContent = parsed.text;
                       setStreamingContent(fullContent);
                     }
+                    // Handle standard OpenAI/Lovable AI streaming format
+                    else if (parsed.choices && parsed.choices[0]) {
+                      if (parsed.choices[0].message && parsed.choices[0].message.content) {
+                        // Complete response - replace all content
+                        fullContent = parsed.choices[0].message.content;
+                        setStreamingContent(fullContent);
+                      } else if (parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                        // Streaming delta - append content
+                        fullContent += parsed.choices[0].delta.content;
+                        setStreamingContent(fullContent);
+                      }
+                    }
                     // Handle Responses API streaming format (старый формат)
                     else if (parsed.responses) {
                       // Обрабатываем ответ от Responses API
@@ -315,18 +327,6 @@ const Playground = () => {
                       } catch (e) {
                         // Если это не JSON, это может быть частичный ответ
                         fullContent += parsed.responses;
-                        setStreamingContent(fullContent);
-                      }
-                    }
-                    // Handle legacy streaming format (fallback)
-                    else if (parsed.choices && parsed.choices[0]) {
-                      if (parsed.choices[0].message && parsed.choices[0].message.content) {
-                        // Complete response - replace all content
-                        fullContent = parsed.choices[0].message.content;
-                        setStreamingContent(fullContent);
-                      } else if (parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                        // Streaming delta - append content
-                        fullContent += parsed.choices[0].delta.content;
                         setStreamingContent(fullContent);
                       }
                     }
@@ -479,7 +479,9 @@ const Playground = () => {
   };
 
   const getProviderIcon = (provider?: string) => {
-    switch (provider) {
+    const actualProvider = provider || 'lovable';
+    switch (actualProvider) {
+      case 'lovable': return <Sparkles className="w-3 h-3" />;
       case 'openai': return <Zap className="w-3 h-3" />;
       case 'anthropic': return <Shield className="w-3 h-3" />;
       case 'google': return <Brain className="w-3 h-3" />;
@@ -623,7 +625,7 @@ const Playground = () => {
                         {selectedAgent.type}
                       </Badge>
                       <Badge variant="outline" className="text-xs border-border/50">
-                        {selectedAgent.aiProvider || 'openai'}
+                        {selectedAgent.aiProvider || 'lovable'}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>

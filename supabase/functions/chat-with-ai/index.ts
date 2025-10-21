@@ -116,7 +116,97 @@ serve(async (req) => {
     let response;
     let generatedText = '';
 
-    if (provider === 'openai') {
+    if (provider === 'lovable') {
+      // Lovable AI Gateway integration
+      const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+      
+      if (!lovableKey) {
+        console.error('LOVABLE_API_KEY not found in environment');
+        return new Response(JSON.stringify({ error: 'Lovable AI not configured' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Using Lovable AI Gateway with model:', model || 'google/gemini-2.5-flash');
+      
+      // Формируем messages для стандартного API
+      const apiMessages = [];
+      
+      if (agentPrompt) {
+        apiMessages.push({
+          role: "system",
+          content: agentPrompt
+        });
+      }
+      
+      messages.forEach(msg => {
+        apiMessages.push({
+          role: msg.role,
+          content: msg.content
+        });
+      });
+
+      const requestBody: any = {
+        model: model || 'google/gemini-2.5-flash',
+        messages: apiMessages,
+        stream
+      };
+
+      console.log('Lovable AI request:', JSON.stringify(requestBody, null, 2));
+
+      response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('Lovable AI response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Lovable AI error:', response.status, errorData);
+        
+        // Handle rate limits
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ 
+            error: 'Rate limit exceeded. Please try again later.' 
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ 
+            error: 'Payment required. Please add credits to your Lovable workspace.' 
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        throw new Error(`Lovable AI error: ${response.status} - ${errorData}`);
+      }
+
+      // Для стриминга возвращаем поток напрямую
+      if (stream) {
+        console.log('Using streaming mode with Lovable AI');
+        return new Response(response.body, {
+          headers: sseHeaders(),
+        });
+      }
+      
+      // Не-стриминговый режим
+      const data = await response.json();
+      console.log('Lovable AI response:', JSON.stringify(data, null, 2));
+      
+      generatedText = data.choices?.[0]?.message?.content || 'No response generated';
+      
+    } else if (provider === 'openai') {
       const openaiKey = await getApiKey('openai', userId);
       
       if (!openaiKey) {

@@ -25,6 +25,16 @@ const agentTypes = [
 
 const aiProviders = [
   { 
+    value: "lovable", 
+    label: "Lovable AI (Gemini)", 
+    icon: Brain,
+    models: [
+      { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+      { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+      { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" }
+    ]
+  },
+  { 
     value: "openai", 
     label: "OpenAI", 
     icon: Zap,
@@ -95,8 +105,9 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
     }
     
     // Добавляем провайдеров, которые настроены в Supabase secrets
-    // OpenAI и Perplexity всегда доступны через Supabase
-    const supabaseProviders = ['openai', 'perplexity'];
+    // Lovable AI всегда доступен (встроенный)
+    // OpenAI и Perplexity доступны через настройки API ключей
+    const supabaseProviders = ['lovable', 'openai', 'perplexity'];
     const allConfigured = [...new Set([...configured, ...supabaseProviders])];
     
     setConfiguredProviders(allConfigured);
@@ -124,6 +135,8 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
     // Определяем модель по провайдеру
     const getDefaultModel = (provider: string) => {
       switch (provider) {
+        case 'lovable':
+          return 'google/gemini-2.5-pro';
         case 'openai':
           return 'gpt-5-2025-08-07';
         case 'anthropic':
@@ -133,7 +146,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
         case 'perplexity':
           return 'sonar-pro';
         default:
-          return 'gpt-5-2025-08-07';
+          return 'google/gemini-2.5-pro';
       }
     };
 
@@ -256,6 +269,7 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                       const Icon = provider.icon;
                       const getModelLabel = (providerValue: string) => {
                         switch (providerValue) {
+                          case 'lovable': return 'Gemini 2.5 Pro';
                           case 'openai': return 'GPT-5';
                           case 'anthropic': return 'Claude 4 Opus';
                           case 'google': return 'Gemini 1.5 Pro';
@@ -296,7 +310,8 @@ export const CreateAgentDialog = ({ onAgentCreated }: CreateAgentDialogProps = {
                     <selectedProvider.icon className="w-4 h-4" />
                     <Badge variant="outline">{selectedProvider.label}</Badge>
                     <Badge variant="secondary" className="text-xs">
-                      {selectedProvider.value === 'openai' ? 'GPT-5' :
+                      {selectedProvider.value === 'lovable' ? 'Gemini 2.5 Pro' :
+                       selectedProvider.value === 'openai' ? 'GPT-5' :
                        selectedProvider.value === 'anthropic' ? 'Claude 4 Opus' :
                        selectedProvider.value === 'google' ? 'Gemini 1.5 Pro' :
                        selectedProvider.value === 'perplexity' ? 'Sonar Pro' : 'По умолчанию'}
