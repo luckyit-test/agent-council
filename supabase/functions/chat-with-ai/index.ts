@@ -175,9 +175,21 @@ serve(async (req) => {
       const requestBody: any = {
         model: model || 'gpt-4o-mini',
         input: apiInput,
-        temperature: 0.2,
         stream
       };
+      
+      // Новые модели (GPT-5, GPT-4.1+, O3, O4) не поддерживают temperature
+      const isNewerModel = model && (
+        model.includes('gpt-5') || 
+        model.includes('gpt-4.1') || 
+        model.includes('o3') || 
+        model.includes('o4')
+      );
+      
+      // Добавляем temperature только для legacy моделей
+      if (!isNewerModel) {
+        requestBody.temperature = 0.2;
+      }
       
       // Добавляем web search если включен
       if (capabilities?.webSearch) {
