@@ -137,7 +137,7 @@ serve(async (req) => {
       let systemPrompt = agentPrompt || '';
       
       if (capabilities?.webSearch) {
-        systemPrompt += '\n\n⚠️ ВАЖНО: У тебя есть доступ к актуальным данным из интернета. Когда пользователь спрашивает о текущих событиях, ценах, курсах, новостях или любой другой информации в реальном времени - используй свои возможности веб-поиска для получения самых свежих данных. Всегда предоставляй актуальную информацию, а не данные из своей базы знаний.';
+        systemPrompt += '\n\n⚠️ КРИТИЧЕСКИ ВАЖНО: Ты ОБЯЗАТЕЛЬНО должен использовать веб-поиск для получения актуальной информации. Когда пользователь спрашивает о:\n- Текущих событиях, новостях\n- Ценах, курсах валют/криптовалют\n- Погоде, датах, времени\n- Любой другой информации в реальном времени\n\nТЫ ДОЛЖЕН выполнить поиск в интернете и предоставить ТОЛЬКО актуальные данные с текущими датами. НЕ используй устаревшие данные из своей базы знаний. Всегда указывай источники и даты информации.';
       }
       
       if (systemPrompt) {
@@ -159,6 +159,14 @@ serve(async (req) => {
         messages: apiMessages,
         stream
       };
+
+      // Enable Google Search for Gemini models if requested
+      if (capabilities?.webSearch && model?.includes('gemini')) {
+        requestBody.tools = [{
+          googleSearch: {}
+        }];
+        console.log('Google Search enabled for Gemini model');
+      }
 
       console.log('Lovable AI request:', JSON.stringify(requestBody, null, 2));
 
