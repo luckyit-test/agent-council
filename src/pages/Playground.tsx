@@ -284,8 +284,19 @@ const Playground = () => {
                   try {
                     const parsed = JSON.parse(data);
                     
-                    // Handle Responses API streaming format
-                    if (parsed.responses) {
+                    // Handle OpenAI Responses API streaming format (новый формат)
+                    if (parsed.type === 'response.output_text.delta' && parsed.delta) {
+                      // Получаем delta текст и добавляем к контенту
+                      fullContent += parsed.delta;
+                      setStreamingContent(fullContent);
+                    }
+                    // Handle complete response from Responses API
+                    else if (parsed.type === 'response.output_text.done' && parsed.text) {
+                      fullContent = parsed.text;
+                      setStreamingContent(fullContent);
+                    }
+                    // Handle Responses API streaming format (старый формат)
+                    else if (parsed.responses) {
                       // Обрабатываем ответ от Responses API
                       try {
                         const responsesData = JSON.parse(parsed.responses);
