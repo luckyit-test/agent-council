@@ -141,14 +141,14 @@ serve(async (req) => {
       if (agentPrompt) {
         apiInput.push({
           role: "system",
-          content: [{ type: "text", text: agentPrompt }]
+          content: [{ type: "input_text", text: agentPrompt }]
         });
       }
       
       // Добавляем сообщения пользователя
       messages.forEach(msg => {
         if (msg.role === 'user') {
-          const content = [{ type: "text", text: msg.content }];
+          const content = [{ type: "input_text", text: msg.content }];
           
           // Добавляем инструкции для web search если включен
           if (capabilities?.webSearch) {
@@ -165,7 +165,7 @@ serve(async (req) => {
         } else {
           apiInput.push({
             role: msg.role,
-            content: [{ type: "text", text: msg.content }]
+            content: [{ type: "input_text", text: msg.content }]
           });
         }
       });
